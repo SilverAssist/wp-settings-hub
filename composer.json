@@ -38,7 +38,7 @@
         "test:coverage": "phpunit --coverage-html coverage",
         "phpcs": "phpcs",
         "phpcs:fix": "phpcbf",
-        "phpstan": "phpstan analyse --memory-limit=256M",
+        "phpstan": "phpstan analyse --memory-limit=512M",
         "qa": [
             "@phpcs",
             "@phpstan",

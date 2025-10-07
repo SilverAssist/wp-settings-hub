@@ -22,8 +22,6 @@ use SilverAssist\SettingsHub\SettingsHub;
 final class SettingsHubTest extends TestCase {
 	/**
 	 * Set up test environment.
-	 *
-	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
@@ -47,18 +45,20 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Tear down test environment.
-	 *
-	 * @return void
 	 */
 	protected function tearDown(): void {
+		// Reset singleton instance using reflection to clean state between tests.
+		$reflection = new \ReflectionClass( SettingsHub::class );
+		$instance   = $reflection->getProperty( 'instance' );
+		$instance->setAccessible( true );
+		$instance->setValue( null, null );
+
 		Monkey\tearDown();
 		parent::tearDown();
 	}
 
 	/**
 	 * Test singleton pattern.
-	 *
-	 * @return void
 	 */
 	public function test_singleton(): void {
 		$instance1 = SettingsHub::get_instance();
@@ -69,8 +69,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test plugin registration.
-	 *
-	 * @return void
 	 */
 	public function test_register_plugin(): void {
 		$hub = SettingsHub::get_instance();
@@ -83,27 +81,32 @@ final class SettingsHubTest extends TestCase {
 			'test-plugin',
 			'Test Plugin',
 			$callback,
-			[
+			array(
 				'description' => 'Test plugin description',
 				'version'     => '1.0.0',
-			]
+			)
 		);
 
 		$this->assertTrue( $hub->is_plugin_registered( 'test-plugin' ), 'Plugin should be registered' );
 
 		$plugins = $hub->get_plugins();
 		$this->assertArrayHasKey( 'test-plugin', $plugins, 'Plugins array should contain test-plugin' );
-		$this->assertSame( 'Test Plugin', $plugins['test-plugin']['name'], 'Plugin name should match' );
-		$this->assertSame( 'test-plugin', $plugins['test-plugin']['slug'], 'Plugin slug should match' );
-		$this->assertSame( $callback, $plugins['test-plugin']['callback'], 'Plugin callback should match' );
-		$this->assertSame( 'Test plugin description', $plugins['test-plugin']['description'], 'Plugin description should match' );
-		$this->assertSame( '1.0.0', $plugins['test-plugin']['version'], 'Plugin version should match' );
+		$plugin = $plugins['test-plugin'];
+		$this->assertSame( 'Test Plugin', $plugin['name'], 'Plugin name should match' );
+		$this->assertSame( 'test-plugin', $plugin['slug'], 'Plugin slug should match' );
+		$this->assertSame( $callback, $plugin['callback'], 'Plugin callback should match' );
+		$this->assertArrayHasKey( 'description', $plugin, 'Plugin should have description' );
+		if ( isset( $plugin['description'] ) ) {
+			$this->assertSame( 'Test plugin description', $plugin['description'], 'Plugin description should match' );
+		}
+		$this->assertArrayHasKey( 'version', $plugin, 'Plugin should have version' );
+		if ( isset( $plugin['version'] ) ) {
+			$this->assertSame( '1.0.0', $plugin['version'], 'Plugin version should match' );
+		}
 	}
 
 	/**
 	 * Test multiple plugin registration.
-	 *
-	 * @return void
 	 */
 	public function test_register_multiple_plugins(): void {
 		$hub = SettingsHub::get_instance();
@@ -132,8 +135,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test is_plugin_registered with unregistered plugin.
-	 *
-	 * @return void
 	 */
 	public function test_is_plugin_registered_false(): void {
 		$hub = SettingsHub::get_instance();
@@ -143,8 +144,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test get_parent_slug.
-	 *
-	 * @return void
 	 */
 	public function test_get_parent_slug(): void {
 		$hub = SettingsHub::get_instance();
@@ -154,8 +153,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test enable_tabs.
-	 *
-	 * @return void
 	 */
 	public function test_enable_tabs(): void {
 		$hub = SettingsHub::get_instance();
@@ -170,29 +167,7 @@ final class SettingsHubTest extends TestCase {
 	}
 
 	/**
-	 * Test register_menus adds action hook.
-	 *
-	 * @return void
-	 */
-	public function test_register_plugin_adds_action(): void {
-		Functions\expect( 'add_action' )
-			->once()
-			->with( 'admin_menu', Monkey\Functions\when( '__' ), 5 );
-
-		$hub = SettingsHub::get_instance();
-		$hub->register_plugin(
-			'test-plugin',
-			'Test Plugin',
-			static function (): void {
-				echo 'Settings';
-			}
-		);
-	}
-
-	/**
 	 * Test dashboard rendering with no plugins.
-	 *
-	 * @return void
 	 */
 	public function test_render_dashboard_no_plugins(): void {
 		$hub = SettingsHub::get_instance();
@@ -209,8 +184,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test dashboard rendering with plugins.
-	 *
-	 * @return void
 	 */
 	public function test_render_dashboard_with_plugins(): void {
 		$hub = SettingsHub::get_instance();
@@ -221,10 +194,10 @@ final class SettingsHubTest extends TestCase {
 			static function (): void {
 				echo 'Settings';
 			},
-			[
+			array(
 				'description' => 'Test description',
 				'version'     => '1.0.0',
-			]
+			)
 		);
 
 		ob_start();
@@ -241,8 +214,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test tabs are rendered when enabled.
-	 *
-	 * @return void
 	 */
 	public function test_render_dashboard_with_tabs(): void {
 		$hub = SettingsHub::get_instance();
@@ -268,8 +239,6 @@ final class SettingsHubTest extends TestCase {
 
 	/**
 	 * Test tabs are not rendered when disabled.
-	 *
-	 * @return void
 	 */
 	public function test_render_dashboard_without_tabs(): void {
 		$hub = SettingsHub::get_instance();

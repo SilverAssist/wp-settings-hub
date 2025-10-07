@@ -37,6 +37,13 @@
 		<exclude name="PEAR.NamingConventions.ValidClassName.Invalid"/>
 		<!-- Allow snake_case function names for WordPress compatibility -->
 		<exclude name="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid"/>
+		<!-- Allow PSR-4 file naming (UpperCamelCase.php) -->
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<!-- Allow array shape PHPDoc syntax for type hints -->
+		<exclude name="Squiz.Commenting.VariableComment.MissingVar"/>
+		<exclude name="Squiz.Commenting.FunctionComment.MissingParamTag"/>
+		<exclude name="Squiz.Commenting.FunctionComment.MissingParamName"/>
 	</rule>
 
 	<!-- Use Slevomat Coding Standard -->

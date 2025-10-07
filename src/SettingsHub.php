@@ -21,8 +21,6 @@ namespace SilverAssist\SettingsHub;
 final class SettingsHub {
 	/**
 	 * Singleton instance.
-	 *
-	 * @var SettingsHub|null
 	 */
 	private static ?SettingsHub $instance = null;
 
@@ -39,7 +37,7 @@ final class SettingsHub {
 	 *     tab_title?: string
 	 * }>
 	 */
-	private array $plugins = [];
+	private array $plugins = array();
 
 	/**
 	 * Parent menu slug.
@@ -50,15 +48,11 @@ final class SettingsHub {
 
 	/**
 	 * Whether the parent menu has been registered.
-	 *
-	 * @var bool
 	 */
 	private bool $parent_registered = false;
 
 	/**
 	 * Whether to render tabs for cross-plugin navigation.
-	 *
-	 * @var bool
 	 */
 	private bool $render_tabs = true;
 
@@ -97,30 +91,26 @@ final class SettingsHub {
 	 *     version?: string,
 	 *     tab_title?: string
 	 * } $args Optional arguments for the plugin.
-	 *
-	 * @return void
 	 */
-	public function register_plugin( string $slug, string $name, callable $callback, array $args = [] ): void {
+	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
 		// Store plugin data.
 		$this->plugins[ $slug ] = array_merge(
-			[
+			array(
 				'name'     => $name,
 				'slug'     => $slug,
 				'callback' => $callback,
-			],
+			),
 			$args
 		);
 
 		// Hook into admin_menu to register menus.
-		add_action( 'admin_menu', [ $this, 'register_menus' ], 5 );
+		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
 	}
 
 	/**
 	 * Enable or disable tab rendering.
 	 *
 	 * @param bool $enable Whether to render tabs.
-	 *
-	 * @return void
 	 */
 	public function enable_tabs( bool $enable ): void {
 		$this->render_tabs = $enable;
@@ -133,8 +123,6 @@ final class SettingsHub {
 	 * before plugins register their submenus.
 	 *
 	 * @internal
-	 *
-	 * @return void
 	 */
 	public function register_menus(): void {
 		// Register parent menu once.
@@ -149,8 +137,6 @@ final class SettingsHub {
 
 	/**
 	 * Register the parent "Silver Assist" menu.
-	 *
-	 * @return void
 	 */
 	private function register_parent_menu(): void {
 		add_options_page(
@@ -158,15 +144,13 @@ final class SettingsHub {
 			__( 'Silver Assist', 'silverassist-settings-hub' ),
 			'manage_options',
 			self::PARENT_SLUG,
-			[ $this, 'render_dashboard' ],
+			array( $this, 'render_dashboard' ),
 			null
 		);
 	}
 
 	/**
 	 * Register submenu items for all registered plugins.
-	 *
-	 * @return void
 	 */
 	private function register_submenus(): void {
 		foreach ( $this->plugins as $plugin ) {
@@ -176,7 +160,7 @@ final class SettingsHub {
 				$plugin['tab_title'] ?? $plugin['name'],
 				'manage_options',
 				$plugin['slug'],
-				function () use ( $plugin ) {
+				function () use ( $plugin ): void {
 					$this->render_plugin_page( $plugin );
 				}
 			);
@@ -188,8 +172,6 @@ final class SettingsHub {
 	 *
 	 * Shows all registered plugins with cards containing name, description,
 	 * version, and a link to their settings page.
-	 *
-	 * @return void
 	 */
 	public function render_dashboard(): void {
 		?>
@@ -233,8 +215,6 @@ final class SettingsHub {
 	 *     version?: string,
 	 *     tab_title?: string
 	 * } $plugin Plugin data.
-	 *
-	 * @return void
 	 */
 	private function render_plugin_card( array $plugin ): void {
 		$settings_url = admin_url( 'options-general.php?page=' . $plugin['slug'] );
@@ -280,8 +260,6 @@ final class SettingsHub {
 	 *     version?: string,
 	 *     tab_title?: string
 	 * } $plugin Plugin data.
-	 *
-	 * @return void
 	 */
 	private function render_plugin_page( array $plugin ): void {
 		?>
@@ -301,15 +279,13 @@ final class SettingsHub {
 	 * Render tabs navigation for cross-plugin navigation.
 	 *
 	 * @param string $active_slug Currently active plugin slug (empty for dashboard).
-	 *
-	 * @return void
 	 */
 	private function render_tabs_navigation( string $active_slug ): void {
 		if ( empty( $this->plugins ) ) {
 			return;
 		}
 
-		$dashboard_url    = admin_url( 'options-general.php?page=' . self::PARENT_SLUG );
+		$dashboard_url       = admin_url( 'options-general.php?page=' . self::PARENT_SLUG );
 		$is_dashboard_active = empty( $active_slug );
 		?>
 		<nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
@@ -319,9 +295,9 @@ final class SettingsHub {
 
 			<?php foreach ( $this->plugins as $plugin ) : ?>
 				<?php
-				$tab_url      = admin_url( 'options-general.php?page=' . $plugin['slug'] );
-				$is_active    = $plugin['slug'] === $active_slug;
-				$tab_title    = $plugin['tab_title'] ?? $plugin['name'];
+				$tab_url   = admin_url( 'options-general.php?page=' . $plugin['slug'] );
+				$is_active = $plugin['slug'] === $active_slug;
+				$tab_title = $plugin['tab_title'] ?? $plugin['name'];
 				?>
 				<a href="<?php echo esc_url( $tab_url ); ?>" class="nav-tab <?php echo $is_active ? 'nav-tab-active' : ''; ?>">
 					<?php echo esc_html( $tab_title ); ?>
@@ -388,10 +364,8 @@ final class SettingsHub {
 
 	/**
 	 * Prevent unserialization of the singleton instance.
-	 *
-	 * @return void
 	 */
-	public function __wakeup() {
+	public function __wakeup(): void {
 		// Singleton - cannot unserialize.
 	}
 }

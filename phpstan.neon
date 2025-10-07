@@ -11,19 +11,3 @@ parameters:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
         - vendor/php-stubs/wordpress-stubs
-    ignoreErrors:
-        # WordPress functions are available at runtime
-        - '#^Function add_action not found\.$#'
-        - '#^Function add_options_page not found\.$#'
-        - '#^Function add_submenu_page not found\.$#'
-        - '#^Function admin_url not found\.$#'
-        - '#^Function __ not found\.$#'
-        - '#^Function esc_html not found\.$#'
-        - '#^Function esc_html_e not found\.$#'
-        - '#^Function esc_attr not found\.$#'
-        - '#^Function esc_url not found\.$#'
-        # PHPUnit and Brain Monkey functions are available in tests
-        - '#^Call to unknown function: Brain\\Monkey\\setUp\.$#'
-        - '#^Call to unknown function: Brain\\Monkey\\tearDown\.$#'
-        - '#^Call to unknown function: Brain\\Monkey\\Functions\\when\.$#'
-        - '#^Undefined function .+\\Brain\\Monkey\\#'
