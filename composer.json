@@ -1,0 +1,56 @@
+{
+    "name": "silverassist/wp-settings-hub",
+    "description": "Centralized settings hub for Silver Assist WordPress plugins. Provides a unified Settings > Silver Assist menu with auto-registration and dynamic dashboard.",
+    "type": "library",
+    "license": "PolyForm-Noncommercial-1.0.0",
+    "authors": [
+        {
+            "name": "Silver Assist",
+            "email": "support@silverassist.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "squizlabs/php_codesniffer": "^3.7",
+        "wp-coding-standards/wpcs": "^3.0",
+        "slevomat/coding-standard": "^8.0",
+        "phpstan/phpstan": "^1.10",
+        "szepeviktor/phpstan-wordpress": "^1.3",
+        "php-stubs/wordpress-stubs": "^6.6",
+        "php-stubs/wp-cli-stubs": "^2.10",
+        "brain/monkey": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "SilverAssist\\SettingsHub\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SilverAssist\\SettingsHub\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "phpcs": "phpcs",
+        "phpcs:fix": "phpcbf",
+        "phpstan": "phpstan analyse --memory-limit=256M",
+        "qa": [
+            "@phpcs",
+            "@phpstan",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
