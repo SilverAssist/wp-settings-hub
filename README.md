@@ -1,8 +1,10 @@
 # Silver Assist Settings Hub
 
-[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue.svg)](LICENSE.md)
-[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.3-8892BF.svg)](https://php.net/)
-[![WordPress](https://img.shields.io/badge/wordpress-%3E%3D6.5-21759B.svg)](https://wordpress.org/)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/silverassist/wp-settings-hub.svg?style=flat-square)](https://packagist.org/packages/silverassist/wp-settings-hub)
+[![Software License](https://img.shields.io/badge/license-PolyForm--Noncommercial--1.0.0-blue.svg?style=flat-square)](LICENSE.md)
+[![Total Downloads](https://img.shields.io/packagist/dt/silverassist/wp-settings-hub.svg?style=flat-square)](https://packagist.org/packages/silverassist/wp-settings-hub)
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.3-8892BF.svg?style=flat-square)](https://php.net/)
+[![WordPress](https://img.shields.io/badge/wordpress-%3E%3D6.5-21759B.svg?style=flat-square)](https://wordpress.org/)
 
 Centralized settings hub for Silver Assist WordPress plugins. Provides a unified **Settings > Silver Assist** menu with auto-registration, dynamic dashboard, and optional cross-plugin navigation tabs.
 
