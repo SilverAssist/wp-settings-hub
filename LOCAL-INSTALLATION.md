@@ -1,8 +1,6 @@
 # Local Installation Guide - Settings Hub Package
 
-Since the package is not yet published on Packagist, you can install it locally in your WordPress plugins for testing.
-
-> **Note**: Version 1.1.0+ uses a **top-level menu** structure. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) for details about the changes from v1.0.0.
+Since the package is not yet published on Packagist, you can install it locally in your WordPress plugins for development and testing.
 
 ## 📦 Installation Methods
 
@@ -12,17 +10,17 @@ This method allows Composer to manage the package as if it were from Packagist.
 
 #### Step 1: Extract the Package
 
-Extract `silverassist-wp-settings-hub-1.1.0-dev-package.zip` (or latest version) to a location accessible by your plugin:
+Extract `silverassist-wp-settings-hub-1.0.0-package.zip` (or latest development version) to a location accessible by your plugin:
 
 ```bash
 # Option A: Inside your plugin (recommended for testing)
 cd /path/to/your-plugin
 mkdir -p packages
-unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d packages/wp-settings-hub
+unzip silverassist-wp-settings-hub-1.0.0-package.zip -d packages/wp-settings-hub
 
 # Option B: In a shared location (for multiple plugins)
 mkdir -p ~/composer-packages
-unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d ~/composer-packages/wp-settings-hub
+unzip silverassist-wp-settings-hub-1.0.0-package.zip -d ~/composer-packages/wp-settings-hub
 ```
 
 #### Step 2: Update Your Plugin's composer.json
@@ -36,7 +34,7 @@ Add the local repository to your plugin's `composer.json`:
     "type": "wordpress-plugin",
     "require": {
         "php": "^8.3",
-        "silverassist/wp-settings-hub": "^1.1"
+        "silverassist/wp-settings-hub": "^1.0"
     },
     "repositories": [
         {
@@ -270,8 +268,10 @@ All plugins will use the same Settings Hub instance, just like in production!
 
 ---
 
-**Package Version**: 1.1.0 (Development)  
+
+**Package Version**: 1.0.0 (Development)  
 **Created**: October 7, 2025  
 **Updated**: October 8, 2025
 
-> **Important**: Version 1.1.0 introduces a **top-level menu** structure. The hub now appears as a main menu item instead of under Settings. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) for migration details.
+> **Note**: The hub creates a **top-level menu** structure. Silver Assist appears as a main menu item with registered plugins as submenus.
+

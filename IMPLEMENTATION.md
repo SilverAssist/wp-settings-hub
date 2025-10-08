@@ -2,8 +2,6 @@
 
 This guide details all the steps necessary to integrate the **Settings Hub** into your Silver Assist plugins.
 
-> **Important**: Version 1.1.0+ uses a **top-level menu** structure instead of Settings submenu. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) if upgrading from v1.0.0.
-
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
@@ -214,10 +212,12 @@ Make sure your `composer.json` includes the dependency:
 {
     "require": {
         "php": "^8.3",
-        "silverassist/wp-settings-hub": "^1.1"
+        "silverassist/wp-settings-hub": "^1.0"
     }
 }
 ```
+
+> **Note**: Once the package is published on Packagist, this will automatically pull the latest stable version.
 
 ### Step 5: Update Autoloader in Your Main Plugin File
 
@@ -255,8 +255,6 @@ $my_plugin = new My_Plugin();
 3. Look for **Silver Assist** in the main admin menu (top-level, with shield icon)
 4. You should see your plugin in the dashboard
 5. Click on your plugin's submenu item and verify that your settings page works correctly
-
-> **Note**: The menu location has changed in v1.1.0+. It's now a top-level menu instead of under Settings.
 
 ---
 
@@ -915,7 +913,5 @@ If you encounter problems during implementation:
 ---
 
 **Last updated**: October 8, 2025  
-**Hub Version**: 1.1.0
-
-> **Breaking Changes in v1.1.0**: The hub now creates a top-level menu instead of appearing under Settings. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) for upgrade details.
+**Hub Version**: 1.0.0 (Development)
 
