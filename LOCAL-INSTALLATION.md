@@ -2,6 +2,8 @@
 
 Since the package is not yet published on Packagist, you can install it locally in your WordPress plugins for testing.
 
+> **Note**: Version 1.1.0+ uses a **top-level menu** structure. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) for details about the changes from v1.0.0.
+
 ## 📦 Installation Methods
 
 ### Method 1: Using Composer Path Repository (Recommended)
@@ -10,17 +12,17 @@ This method allows Composer to manage the package as if it were from Packagist.
 
 #### Step 1: Extract the Package
 
-Extract `silverassist-wp-settings-hub-1.0.0-package.zip` to a location accessible by your plugin:
+Extract `silverassist-wp-settings-hub-1.1.0-dev-package.zip` (or latest version) to a location accessible by your plugin:
 
 ```bash
 # Option A: Inside your plugin (recommended for testing)
 cd /path/to/your-plugin
 mkdir -p packages
-unzip silverassist-wp-settings-hub-1.0.0-package.zip -d packages/wp-settings-hub
+unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d packages/wp-settings-hub
 
 # Option B: In a shared location (for multiple plugins)
 mkdir -p ~/composer-packages
-unzip silverassist-wp-settings-hub-1.0.0-package.zip -d ~/composer-packages/wp-settings-hub
+unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d ~/composer-packages/wp-settings-hub
 ```
 
 #### Step 2: Update Your Plugin's composer.json
@@ -34,7 +36,7 @@ Add the local repository to your plugin's `composer.json`:
     "type": "wordpress-plugin",
     "require": {
         "php": "^8.3",
-        "silverassist/wp-settings-hub": "^1.0"
+        "silverassist/wp-settings-hub": "^1.1"
     },
     "repositories": [
         {
@@ -117,7 +119,7 @@ If you don't want to use Composer for the local package:
 ```bash
 cd /path/to/your-plugin
 mkdir -p vendor/silverassist/wp-settings-hub
-unzip silverassist-wp-settings-hub-1.0.0-package.zip -d vendor/silverassist/wp-settings-hub
+unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d vendor/silverassist/wp-settings-hub
 ```
 
 #### Step 2: Manual Autoload Setup
@@ -176,7 +178,7 @@ Delete and re-extract the updated ZIP:
 ```bash
 cd /path/to/your-plugin
 rm -rf vendor/silverassist/wp-settings-hub
-unzip silverassist-wp-settings-hub-1.0.0-package.zip -d vendor/silverassist/wp-settings-hub
+unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d vendor/silverassist/wp-settings-hub
 ```
 
 ---
@@ -206,7 +208,7 @@ To test the hub with multiple plugins:
 1. **Extract once** to a shared location:
    ```bash
    mkdir -p ~/wp-packages
-   unzip silverassist-wp-settings-hub-1.0.0-package.zip -d ~/wp-packages/wp-settings-hub
+   unzip silverassist-wp-settings-hub-1.1.0-dev-package.zip -d ~/wp-packages/wp-settings-hub
    ```
 
 2. **Reference in each plugin's composer.json**:
@@ -222,7 +224,7 @@ To test the hub with multiple plugins:
            }
        ],
        "require": {
-           "silverassist/wp-settings-hub": "^1.0"
+           "silverassist/wp-settings-hub": "^1.1"
        }
    }
    ```
@@ -268,5 +270,8 @@ All plugins will use the same Settings Hub instance, just like in production!
 
 ---
 
-**Package Version**: 1.0.0  
-**Created**: October 7, 2025
+**Package Version**: 1.1.0 (Development)  
+**Created**: October 7, 2025  
+**Updated**: October 8, 2025
+
+> **Important**: Version 1.1.0 introduces a **top-level menu** structure. The hub now appears as a main menu item instead of under Settings. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) for migration details.

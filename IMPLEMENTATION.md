@@ -2,6 +2,8 @@
 
 This guide details all the steps necessary to integrate the **Settings Hub** into your Silver Assist plugins.
 
+> **Important**: Version 1.1.0+ uses a **top-level menu** structure instead of Settings submenu. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) if upgrading from v1.0.0.
+
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
@@ -212,7 +214,7 @@ Make sure your `composer.json` includes the dependency:
 {
     "require": {
         "php": "^8.3",
-        "silverassist/wp-settings-hub": "^1.0"
+        "silverassist/wp-settings-hub": "^1.1"
     }
 }
 ```
@@ -250,9 +252,11 @@ $my_plugin = new My_Plugin();
 
 1. Run `composer install` in your plugin
 2. Activate your plugin in WordPress
-3. Go to **Settings > Silver Assist**
+3. Look for **Silver Assist** in the main admin menu (top-level, with shield icon)
 4. You should see your plugin in the dashboard
-5. Click "Configure" and verify that your settings page works correctly
+5. Click on your plugin's submenu item and verify that your settings page works correctly
+
+> **Note**: The menu location has changed in v1.1.0+. It's now a top-level menu instead of under Settings.
 
 ---
 
@@ -740,7 +744,7 @@ public function render_settings(): void {
 ### Problem 1: Plugin does not appear in dashboard
 
 **Symptoms:**
-- You don't see your plugin in Settings > Silver Assist
+- You don't see your plugin in the Silver Assist menu
 
 **Solution:**
 ```php
@@ -751,6 +755,8 @@ add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
 // add_action( 'init', ... )  // ❌ Too late
 // add_action( 'admin_menu', ... )  // ❌ Conflicts with hub
 ```
+
+> **Note**: In v1.1.0+, Silver Assist appears as a top-level menu item, not under Settings.
 
 ### Problem 2: Blank page when clicking "Configure"
 
@@ -908,6 +914,8 @@ If you encounter problems during implementation:
 
 ---
 
-**Last updated**: October 7, 2025  
-**Hub Version**: 1.0.0
+**Last updated**: October 8, 2025  
+**Hub Version**: 1.1.0
+
+> **Breaking Changes in v1.1.0**: The hub now creates a top-level menu instead of appearing under Settings. See [MIGRATION-v1.1.md](MIGRATION-v1.1.md) for upgrade details.
 

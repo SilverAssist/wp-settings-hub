@@ -37,7 +37,7 @@ final class SettingsHub {
 	 *     tab_title?: string
 	 * }>
 	 */
-	private array $plugins = [];
+	private array $plugins = array();
 
 	/**
 	 * Parent menu slug.
@@ -92,19 +92,19 @@ final class SettingsHub {
 	 *     tab_title?: string
 	 * } $args Optional arguments for the plugin.
 	 */
-	public function register_plugin( string $slug, string $name, callable $callback, array $args = [] ): void {
+	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
 		// Store plugin data.
 		$this->plugins[ $slug ] = array_merge(
-			[
+			array(
 				'name'     => $name,
 				'slug'     => $slug,
 				'callback' => $callback,
-			],
+			),
 			$args
 		);
 
 		// Hook into admin_menu to register menus.
-		add_action( 'admin_menu', [ $this, 'register_menus' ], 5 );
+		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
 	}
 
 	/**
@@ -147,7 +147,7 @@ final class SettingsHub {
 			__( 'Silver Assist', 'silverassist-settings-hub' ),
 			'manage_options',
 			self::PARENT_SLUG,
-			[ $this, 'render_dashboard' ],
+			array( $this, 'render_dashboard' ),
 			'dashicons-shield',
 			80
 		);
@@ -159,7 +159,7 @@ final class SettingsHub {
 			__( 'Dashboard', 'silverassist-settings-hub' ),
 			'manage_options',
 			self::PARENT_SLUG,
-			[ $this, 'render_dashboard' ]
+			array( $this, 'render_dashboard' )
 		);
 	}
 
