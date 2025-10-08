@@ -37,7 +37,7 @@ final class SettingsHub {
 	 *     tab_title?: string
 	 * }>
 	 */
-	private array $plugins = array();
+	private array $plugins = [];
 
 	/**
 	 * Parent menu slug.
@@ -92,19 +92,19 @@ final class SettingsHub {
 	 *     tab_title?: string
 	 * } $args Optional arguments for the plugin.
 	 */
-	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
+	public function register_plugin( string $slug, string $name, callable $callback, array $args = [] ): void {
 		// Store plugin data.
 		$this->plugins[ $slug ] = array_merge(
-			array(
+			[
 				'name'     => $name,
 				'slug'     => $slug,
 				'callback' => $callback,
-			),
+			],
 			$args
 		);
 
 		// Hook into admin_menu to register menus.
-		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
+		add_action( 'admin_menu', [ $this, 'register_menus' ], 5 );
 	}
 
 	/**
@@ -137,15 +137,29 @@ final class SettingsHub {
 
 	/**
 	 * Register the parent "Silver Assist" menu.
+	 *
+	 * Creates a top-level menu with a dashboard submenu.
 	 */
 	private function register_parent_menu(): void {
-		add_options_page(
+		// Register top-level menu.
+		add_menu_page(
 			__( 'Silver Assist', 'silverassist-settings-hub' ),
 			__( 'Silver Assist', 'silverassist-settings-hub' ),
 			'manage_options',
 			self::PARENT_SLUG,
-			array( $this, 'render_dashboard' ),
-			null
+			[ $this, 'render_dashboard' ],
+			'dashicons-shield',
+			80
+		);
+
+		// Add Dashboard as first submenu (this removes the duplicate parent link).
+		add_submenu_page(
+			self::PARENT_SLUG,
+			__( 'Dashboard', 'silverassist-settings-hub' ),
+			__( 'Dashboard', 'silverassist-settings-hub' ),
+			'manage_options',
+			self::PARENT_SLUG,
+			[ $this, 'render_dashboard' ]
 		);
 	}
 
@@ -217,7 +231,7 @@ final class SettingsHub {
 	 * } $plugin Plugin data.
 	 */
 	private function render_plugin_card( array $plugin ): void {
-		$settings_url = admin_url( 'options-general.php?page=' . $plugin['slug'] );
+		$settings_url = admin_url( 'admin.php?page=' . $plugin['slug'] );
 		?>
 		<div class="card" style="padding: 20px;">
 			<?php if ( ! empty( $plugin['icon_url'] ) ) : ?>
@@ -285,7 +299,7 @@ final class SettingsHub {
 			return;
 		}
 
-		$dashboard_url       = admin_url( 'options-general.php?page=' . self::PARENT_SLUG );
+		$dashboard_url       = admin_url( 'admin.php?page=' . self::PARENT_SLUG );
 		$is_dashboard_active = empty( $active_slug );
 		?>
 		<nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
@@ -295,7 +309,7 @@ final class SettingsHub {
 
 			<?php foreach ( $this->plugins as $plugin ) : ?>
 				<?php
-				$tab_url   = admin_url( 'options-general.php?page=' . $plugin['slug'] );
+				$tab_url   = admin_url( 'admin.php?page=' . $plugin['slug'] );
 				$is_active = $plugin['slug'] === $active_slug;
 				$tab_title = $plugin['tab_title'] ?? $plugin['name'];
 				?>

@@ -6,7 +6,7 @@
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.3-8892BF.svg?style=flat-square)](https://php.net/)
 [![WordPress](https://img.shields.io/badge/wordpress-%3E%3D6.5-21759B.svg?style=flat-square)](https://wordpress.org/)
 
-Centralized settings hub for Silver Assist WordPress plugins. Provides a unified **Settings > Silver Assist** menu with auto-registration, dynamic dashboard, and optional cross-plugin navigation tabs.
+Centralized settings hub for Silver Assist WordPress plugins. Provides a unified **top-level "Silver Assist"** menu with auto-registration, dynamic dashboard, and optional cross-plugin navigation tabs.
 
 ## Features
 
@@ -14,6 +14,7 @@ Centralized settings hub for Silver Assist WordPress plugins. Provides a unified
 - **📊 Dynamic Dashboard**: Automatically generates overview of all installed Silver Assist plugins
 - **🔗 Cross-Plugin Navigation**: Optional tabs for seamless navigation between plugin settings
 - **🎨 Beautiful UI**: WordPress-native design with cards and tabs
+- **🏢 Top-Level Menu**: Professional menu structure with custom icon and submenus
 - **🔒 Type-Safe**: Full PHP 8.3+ type hints and PHPDocs
 - **✅ Well-Tested**: Comprehensive test suite with PHPUnit 10
 - **📦 Composer-Ready**: Easy integration via `composer require`
@@ -31,6 +32,26 @@ Install via Composer:
 ```bash
 composer require silverassist/wp-settings-hub
 ```
+
+## Menu Structure
+
+The hub creates a **top-level menu** in the WordPress admin:
+
+```
+WordPress Admin
+├── Dashboard
+├── Posts
+├── Media
+├── ...
+├── Silver Assist 🛡️           ← Top-level menu
+│   ├── Dashboard              ← Hub overview
+│   ├── Post Revalidate        ← Your plugin
+│   └── [More plugins...]      ← More plugins
+└── ...
+```
+
+**Dashboard URL**: `admin.php?page=silver-assist`  
+**Plugin URLs**: `admin.php?page={your-plugin-slug}`
 
 ## Quick Start
 
@@ -81,9 +102,9 @@ public function render_settings(): void {
 
 ### 3. That's It!
 
-Your plugin now appears under **Settings > Silver Assist** with:
+Your plugin now appears under the **Silver Assist** top-level menu with:
 - A card on the dashboard showing name, description, version, and icon
-- A dedicated settings page with optional tabs navigation
+- A dedicated settings page as a submenu with optional tabs navigation
 - Automatic cross-plugin navigation (if tabs are enabled)
 
 ## Complete Example
