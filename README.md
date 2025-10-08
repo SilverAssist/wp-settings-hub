@@ -152,43 +152,6 @@ $hub = SettingsHub::get_instance();
 $parent_slug = $hub->get_parent_slug(); // Returns 'silver-assist'
 ```
 
-## Migration from Standalone Settings
-
-If your plugin currently has standalone settings under the Settings menu:
-
-### Before (Standalone)
-
-```php
-add_action( 'admin_menu', function() {
-    add_options_page(
-        'My Plugin Settings',
-        'My Plugin',
-        'manage_options',
-        'my-plugin',
-        [ $this, 'render_settings' ]
-    );
-} );
-```
-
-### After (With Hub)
-
-```php
-use SilverAssist\SettingsHub\SettingsHub;
-
-$hub = SettingsHub::get_instance();
-$hub->register_plugin(
-    'my-plugin',
-    'My Plugin',
-    [ $this, 'render_settings' ],
-    [
-        'description' => 'My plugin description',
-        'version'     => '1.0.0',
-    ]
-);
-```
-
-**Note**: Remove your old `add_options_page` call to avoid duplicate menu items.
-
 ## API Reference
 
 ### `SettingsHub::get_instance()`
