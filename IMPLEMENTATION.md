@@ -6,22 +6,23 @@ This guide details all the steps necessary to integrate the **Settings Hub** int
 
 1. [Prerequisites](#prerequisites)
 2. [Package Installation](#package-installation)
-3. [Migration from Standalone Settings](#migration-from-standalone-settings)
-4. [Implementation from Scratch](#implementation-from-scratch)
-5. [Examples by Plugin Type](#examples-by-plugin-type)
-6. [Best Practices](#best-practices)
-7. [Troubleshooting](#troubleshooting)
+3. [Basic Implementation](#basic-implementation)
+4. [Examples by Plugin Type](#examples-by-plugin-type)
+5. [Best Practices](#best-practices)
+6. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## 📦 Prerequisites
 
 ### Required Software
+
 - **PHP**: 8.3 or higher
 - **WordPress**: 6.5 or higher
 - **Composer**: For dependency management
 
 ### Verify Requirements
+
 ```bash
 # Check PHP version
 php -v
@@ -51,7 +52,8 @@ composer show silverassist/wp-settings-hub
 ```
 
 You should see something like:
-```
+
+```text
 name     : silverassist/wp-settings-hub
 version  : 1.0.0
 type     : library
@@ -61,207 +63,19 @@ license  : PolyForm-Noncommercial-1.0.0
 ### Step 3: Update .gitignore (if necessary)
 
 Make sure your `.gitignore` includes:
-```
+
+```gitignore
 /vendor/
 composer.lock  # Optional: include in plugin projects
 ```
 
 ---
 
-## 🔄 Migration from Standalone Settings
+## 🚀 Basic Implementation
 
-If your plugin **already has** an independent settings page, follow these steps to migrate to the Settings Hub **without losing functionality**.
+This section shows you how to integrate your plugin with the Settings Hub.
 
-### Current Architecture (Before)
-
-Your plugin probably has something like:
-
-```php
-// In your main file or Plugin class
-class My_Plugin {
-    public function __construct() {
-        add_action( 'admin_menu', [ $this, 'register_settings_page' ] );
-        add_action( 'admin_init', [ $this, 'register_settings' ] );
-    }
-
-    public function register_settings_page() {
-        add_options_page(
-            'My Plugin Settings',
-            'My Plugin',
-            'manage_options',
-            'my-plugin-settings',
-            [ $this, 'render_settings_page' ]
-        );
-    }
-
-    public function register_settings() {
-        // Register settings with WordPress Settings API
-        register_setting( 'my_plugin_options', 'my_plugin_api_key' );
-        // ... more settings
-    }
-
-    public function render_settings_page() {
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-            <form method="post" action="options.php">
-                <?php
-                settings_fields( 'my_plugin_options' );
-                do_settings_sections( 'my_plugin_options' );
-                submit_button();
-                ?>
-            </form>
-        </div>
-        <?php
-    }
-}
-```
-
-### Step 1: Import the SettingsHub
-
-At the beginning of your main file or class:
-
-```php
-use SilverAssist\SettingsHub\SettingsHub;
-```
-
-### Step 2: Modify the Constructor
-
-Replace the `admin_menu` hook with one to register with the hub:
-
-```php
-class My_Plugin {
-    public function __construct() {
-        // BEFORE: add_action( 'admin_menu', [ $this, 'register_settings_page' ] );
-        // AFTER:
-        add_action( 'plugins_loaded', [ $this, 'register_with_settings_hub' ] );
-        
-        // Keep this hook, settings still use WordPress Settings API
-        add_action( 'admin_init', [ $this, 'register_settings' ] );
-    }
-
-    public function register_with_settings_hub() {
-        // Check if the Settings Hub is available
-        if ( ! class_exists( SettingsHub::class ) ) {
-            // Fallback: use standalone page if hub is not available
-            add_action( 'admin_menu', [ $this, 'register_settings_page_standalone' ] );
-            return;
-        }
-
-        // Register with the Settings Hub
-        $hub = SettingsHub::get_instance();
-        $hub->register_plugin(
-            'my-plugin-settings',           // Unique slug
-            'My Plugin',                    // Display name
-            [ $this, 'render_settings_page' ], // Your existing callback
-            [
-                'description' => 'Short description of your plugin',
-                'version'     => '1.0.0',   // Your plugin version
-                'tab_title'   => 'My Plugin', // Optional: short title for tab
-            ]
-        );
-    }
-
-    // Fallback method (keep your original implementation)
-    public function register_settings_page_standalone() {
-        add_options_page(
-            'My Plugin Settings',
-            'My Plugin',
-            'manage_options',
-            'my-plugin-settings',
-            [ $this, 'render_settings_page' ]
-        );
-    }
-
-    // ⚠️ IMPORTANT: DO NOT change this method
-    // The Settings Hub only handles the MENU, settings remain the same
-    public function register_settings() {
-        register_setting( 'my_plugin_options', 'my_plugin_api_key' );
-        // ... all your existing settings
-    }
-
-    // ⚠️ IMPORTANT: DO NOT change this method
-    // Your settings page continues working exactly the same
-    public function render_settings_page() {
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-            <form method="post" action="options.php">
-                <?php
-                settings_fields( 'my_plugin_options' );
-                do_settings_sections( 'my_plugin_options' );
-                submit_button();
-                ?>
-            </form>
-        </div>
-        <?php
-    }
-}
-```
-
-### Step 3: Remove Old Registration Method (Optional)
-
-If you no longer need the fallback, you can remove `register_settings_page_standalone()`. But it's recommended to keep it in case the hub is not available.
-
-### Step 4: Update Plugin composer.json
-
-Make sure your `composer.json` includes the dependency:
-
-```json
-{
-    "require": {
-        "php": "^8.3",
-        "silverassist/wp-settings-hub": "^1.0"
-    }
-}
-```
-
-> **Note**: Once the package is published on Packagist, this will automatically pull the latest stable version.
-
-### Step 5: Update Autoloader in Your Main Plugin File
-
-In your plugin's main file (e.g., `my-plugin.php`):
-
-```php
-<?php
-/**
- * Plugin Name: My Plugin
- * Plugin URI: https://silverassist.com
- * Description: Description of my plugin
- * Version: 1.0.0
- * Requires at least: 6.5
- * Requires PHP: 8.3
- * Author: Silver Assist
- * License: PolyForm-Noncommercial-1.0.0
- */
-
-declare(strict_types=1);
-
-// Load Composer autoloader
-if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
-    require_once __DIR__ . '/vendor/autoload.php';
-}
-
-// Initialize your plugin
-require_once __DIR__ . '/includes/class-my-plugin.php';
-$my_plugin = new My_Plugin();
-```
-
-### Step 6: Test the Migration
-
-1. Run `composer install` in your plugin
-2. Activate your plugin in WordPress
-3. Look for **Silver Assist** in the main admin menu (top-level, with shield icon)
-4. You should see your plugin in the dashboard
-5. Click on your plugin's submenu item and verify that your settings page works correctly
-
----
-
-## 🆕 Implementation from Scratch
-
-If you're creating a new plugin or one without previous settings:
-
-### Basic Structure
+### Complete Plugin Example
 
 ```php
 <?php
@@ -355,6 +169,43 @@ class Plugin {
 }
 ```
 
+### Plugin Main File
+
+In your plugin's main file (e.g., `my-plugin.php`):
+
+```php
+<?php
+/**
+ * Plugin Name: My Plugin
+ * Plugin URI: https://silverassist.com
+ * Description: Description of my plugin
+ * Version: 1.0.0
+ * Requires at least: 6.5
+ * Requires PHP: 8.3
+ * Author: Silver Assist
+ * License: PolyForm-Noncommercial-1.0.0
+ */
+
+declare(strict_types=1);
+
+// Load Composer autoloader
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
+
+// Initialize your plugin
+require_once __DIR__ . '/includes/class-plugin.php';
+$my_plugin = new SilverAssist\MyPlugin\Plugin();
+```
+
+### Verification Steps
+
+1. Run `composer install` in your plugin
+2. Activate your plugin in WordPress
+3. Look for **Silver Assist** in the main admin menu (top-level, with shield icon)
+4. You should see your plugin in the dashboard
+5. Click on your plugin's submenu item and verify that your settings page works correctly
+
 ---
 
 ## 📚 Examples by Plugin Type
@@ -362,7 +213,20 @@ class Plugin {
 ### Example 1: Plugin with API Key
 
 ```php
+<?php
+namespace SilverAssist\ApiPlugin;
+
+use SilverAssist\SettingsHub\SettingsHub;
+
 class API_Plugin {
+    private const VERSION = '1.2.0';
+    private const SETTINGS_SLUG = 'api-plugin';
+
+    public function __construct() {
+        add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
+        add_action( 'admin_init', [ $this, 'register_settings' ] );
+    }
+
     public function register_with_hub(): void {
         if ( ! class_exists( SettingsHub::class ) ) {
             return;
@@ -370,23 +234,23 @@ class API_Plugin {
 
         $hub = SettingsHub::get_instance();
         $hub->register_plugin(
-            'api-plugin',
+            self::SETTINGS_SLUG,
             'API Plugin',
             [ $this, 'render_settings' ],
             [
                 'description' => 'Configure your API key to connect external services',
-                'version'     => '1.2.0',
+                'version'     => self::VERSION,
             ]
         );
     }
 
     public function register_settings(): void {
-        register_setting( 'api_plugin', 'api_plugin_key', [
+        register_setting( self::SETTINGS_SLUG, 'api_plugin_key', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
         ] );
 
-        register_setting( 'api_plugin', 'api_plugin_endpoint', [
+        register_setting( self::SETTINGS_SLUG, 'api_plugin_endpoint', [
             'type'              => 'string',
             'sanitize_callback' => 'esc_url_raw',
             'default'           => 'https://api.example.com',
@@ -394,31 +258,38 @@ class API_Plugin {
     }
 
     public function render_settings(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
         ?>
         <div class="wrap">
+            <h1><?php esc_html_e( 'API Configuration', 'api-plugin' ); ?></h1>
+            
             <form method="post" action="options.php">
-                <?php settings_fields( 'api_plugin' ); ?>
+                <?php settings_fields( self::SETTINGS_SLUG ); ?>
                 
                 <table class="form-table">
                     <tr>
-                        <th scope="row">API Key</th>
+                        <th scope="row"><?php esc_html_e( 'API Key', 'api-plugin' ); ?></th>
                         <td>
                             <input 
                                 type="password" 
                                 name="api_plugin_key" 
-                                value="<?php echo esc_attr( get_option( 'api_plugin_key' ) ); ?>"
+                                value="<?php echo esc_attr( get_option( 'api_plugin_key', '' ) ); ?>"
                                 class="regular-text"
                             >
-                            <p class="description">Enter your service API key</p>
+                            <p class="description">
+                                <?php esc_html_e( 'Enter your service API key', 'api-plugin' ); ?>
+                            </p>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row">Endpoint URL</th>
+                        <th scope="row"><?php esc_html_e( 'Endpoint URL', 'api-plugin' ); ?></th>
                         <td>
                             <input 
                                 type="url" 
                                 name="api_plugin_endpoint" 
-                                value="<?php echo esc_attr( get_option( 'api_plugin_endpoint' ) ); ?>"
+                                value="<?php echo esc_attr( get_option( 'api_plugin_endpoint', 'https://api.example.com' ) ); ?>"
                                 class="regular-text"
                             >
                         </td>
@@ -430,28 +301,33 @@ class API_Plugin {
 
             <!-- Status section -->
             <hr>
-            <h3>Connection Status</h3>
+            <h3><?php esc_html_e( 'Connection Status', 'api-plugin' ); ?></h3>
             <?php $this->render_connection_status(); ?>
         </div>
         <?php
     }
 
     private function render_connection_status(): void {
-        $api_key = get_option( 'api_plugin_key' );
+        $api_key = get_option( 'api_plugin_key', '' );
         
         if ( empty( $api_key ) ) {
-            echo '<p>❌ You have not configured an API key</p>';
+            echo '<p>❌ ' . esc_html__( 'You have not configured an API key', 'api-plugin' ) . '</p>';
             return;
         }
 
-        // Check connection
+        // Check connection (implement your own logic)
         $is_connected = $this->test_api_connection();
         
         if ( $is_connected ) {
-            echo '<p>✅ Connected successfully</p>';
+            echo '<p>✅ ' . esc_html__( 'Connected successfully', 'api-plugin' ) . '</p>';
         } else {
-            echo '<p>⚠️ Connection error. Check your API key</p>';
+            echo '<p>⚠️ ' . esc_html__( 'Connection error. Check your API key', 'api-plugin' ) . '</p>';
         }
+    }
+
+    private function test_api_connection(): bool {
+        // Implement your API connection test here
+        return true;
     }
 }
 ```
@@ -459,7 +335,20 @@ class API_Plugin {
 ### Example 2: Plugin with Feature Toggle
 
 ```php
+<?php
+namespace SilverAssist\FeaturePlugin;
+
+use SilverAssist\SettingsHub\SettingsHub;
+
 class Feature_Plugin {
+    private const VERSION = '2.0.0';
+    private const SETTINGS_SLUG = 'feature-plugin';
+
+    public function __construct() {
+        add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
+        add_action( 'admin_init', [ $this, 'register_settings' ] );
+    }
+
     public function register_with_hub(): void {
         if ( ! class_exists( SettingsHub::class ) ) {
             return;
@@ -467,24 +356,24 @@ class Feature_Plugin {
 
         $hub = SettingsHub::get_instance();
         $hub->register_plugin(
-            'feature-plugin',
+            self::SETTINGS_SLUG,
             'Feature Plugin',
             [ $this, 'render_settings' ],
             [
                 'description' => 'Enable or disable plugin functionality',
-                'version'     => '2.0.0',
+                'version'     => self::VERSION,
             ]
         );
     }
 
     public function register_settings(): void {
-        register_setting( 'feature_plugin', 'feature_plugin_enabled', [
+        register_setting( self::SETTINGS_SLUG, 'feature_plugin_enabled', [
             'type'              => 'boolean',
             'sanitize_callback' => 'rest_sanitize_boolean',
             'default'           => true,
         ] );
 
-        register_setting( 'feature_plugin', 'feature_plugin_mode', [
+        register_setting( self::SETTINGS_SLUG, 'feature_plugin_mode', [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => 'automatic',
@@ -492,16 +381,22 @@ class Feature_Plugin {
     }
 
     public function render_settings(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
         $enabled = get_option( 'feature_plugin_enabled', true );
         $mode    = get_option( 'feature_plugin_mode', 'automatic' );
         ?>
         <div class="wrap">
+            <h1><?php esc_html_e( 'Feature Configuration', 'feature-plugin' ); ?></h1>
+            
             <form method="post" action="options.php">
-                <?php settings_fields( 'feature_plugin' ); ?>
+                <?php settings_fields( self::SETTINGS_SLUG ); ?>
 
                 <table class="form-table">
                     <tr>
-                        <th scope="row">Plugin Status</th>
+                        <th scope="row"><?php esc_html_e( 'Plugin Status', 'feature-plugin' ); ?></th>
                         <td>
                             <label>
                                 <input 
@@ -510,26 +405,26 @@ class Feature_Plugin {
                                     value="1"
                                     <?php checked( $enabled ); ?>
                                 >
-                                Enable functionality
+                                <?php esc_html_e( 'Enable functionality', 'feature-plugin' ); ?>
                             </label>
                             <p class="description">
-                                Disable this to pause the plugin without uninstalling it
+                                <?php esc_html_e( 'Disable this to pause the plugin without uninstalling it', 'feature-plugin' ); ?>
                             </p>
                         </td>
                     </tr>
 
                     <tr>
-                        <th scope="row">Operation Mode</th>
+                        <th scope="row"><?php esc_html_e( 'Operation Mode', 'feature-plugin' ); ?></th>
                         <td>
                             <select name="feature_plugin_mode">
                                 <option value="automatic" <?php selected( $mode, 'automatic' ); ?>>
-                                    Automatic
+                                    <?php esc_html_e( 'Automatic', 'feature-plugin' ); ?>
                                 </option>
                                 <option value="manual" <?php selected( $mode, 'manual' ); ?>>
-                                    Manual
+                                    <?php esc_html_e( 'Manual', 'feature-plugin' ); ?>
                                 </option>
                                 <option value="scheduled" <?php selected( $mode, 'scheduled' ); ?>>
-                                    Scheduled
+                                    <?php esc_html_e( 'Scheduled', 'feature-plugin' ); ?>
                                 </option>
                             </select>
                         </td>
@@ -541,12 +436,12 @@ class Feature_Plugin {
 
             <!-- Additional information -->
             <div class="card" style="margin-top: 20px;">
-                <h3>Plugin Information</h3>
-                <p><strong>Version:</strong> <?php echo esc_html( self::VERSION ); ?></p>
-                <p><strong>Status:</strong> 
-                    <?php echo $enabled ? '✅ Active' : '❌ Inactive'; ?>
+                <h3><?php esc_html_e( 'Plugin Information', 'feature-plugin' ); ?></h3>
+                <p><strong><?php esc_html_e( 'Version:', 'feature-plugin' ); ?></strong> <?php echo esc_html( self::VERSION ); ?></p>
+                <p><strong><?php esc_html_e( 'Status:', 'feature-plugin' ); ?></strong> 
+                    <?php echo $enabled ? '✅ ' . esc_html__( 'Active', 'feature-plugin' ) : '❌ ' . esc_html__( 'Inactive', 'feature-plugin' ); ?>
                 </p>
-                <p><strong>Mode:</strong> <?php echo esc_html( ucfirst( $mode ) ); ?></p>
+                <p><strong><?php esc_html_e( 'Mode:', 'feature-plugin' ); ?></strong> <?php echo esc_html( ucfirst( $mode ) ); ?></p>
             </div>
         </div>
         <?php
@@ -554,37 +449,78 @@ class Feature_Plugin {
 }
 ```
 
-### Example 3: Plugin with Multiple Tabs (using WordPress UI)
+### Example 3: Plugin with Multiple Tabs
 
 If you need multiple sections in your settings page:
 
 ```php
+<?php
+namespace SilverAssist\AdvancedPlugin;
+
+use SilverAssist\SettingsHub\SettingsHub;
+
 class Advanced_Plugin {
+    private const VERSION = '3.0.0';
+    private const SETTINGS_SLUG = 'advanced-plugin';
+
+    public function __construct() {
+        add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
+        add_action( 'admin_init', [ $this, 'register_settings' ] );
+    }
+
+    public function register_with_hub(): void {
+        if ( ! class_exists( SettingsHub::class ) ) {
+            return;
+        }
+
+        $hub = SettingsHub::get_instance();
+        $hub->register_plugin(
+            self::SETTINGS_SLUG,
+            'Advanced Plugin',
+            [ $this, 'render_settings' ],
+            [
+                'description' => 'Advanced configuration with multiple sections',
+                'version'     => self::VERSION,
+            ]
+        );
+    }
+
+    public function register_settings(): void {
+        // Register settings for each section
+        register_setting( self::SETTINGS_SLUG . '_general', 'advanced_plugin_general_option' );
+        register_setting( self::SETTINGS_SLUG . '_api', 'advanced_plugin_api_key' );
+        register_setting( self::SETTINGS_SLUG . '_advanced', 'advanced_plugin_advanced_option' );
+    }
+
     public function render_settings(): void {
-        $active_tab = $_GET['tab'] ?? 'general';
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general';
         ?>
         <div class="wrap">
-            <h1>Advanced Configuration</h1>
+            <h1><?php esc_html_e( 'Advanced Configuration', 'advanced-plugin' ); ?></h1>
 
             <!-- WordPress tabs -->
             <nav class="nav-tab-wrapper wp-clearfix">
                 <a 
-                    href="?page=advanced-plugin&tab=general" 
+                    href="?page=<?php echo esc_attr( self::SETTINGS_SLUG ); ?>&tab=general" 
                     class="nav-tab <?php echo $active_tab === 'general' ? 'nav-tab-active' : ''; ?>"
                 >
-                    General
+                    <?php esc_html_e( 'General', 'advanced-plugin' ); ?>
                 </a>
                 <a 
-                    href="?page=advanced-plugin&tab=api" 
+                    href="?page=<?php echo esc_attr( self::SETTINGS_SLUG ); ?>&tab=api" 
                     class="nav-tab <?php echo $active_tab === 'api' ? 'nav-tab-active' : ''; ?>"
                 >
-                    API
+                    <?php esc_html_e( 'API', 'advanced-plugin' ); ?>
                 </a>
                 <a 
-                    href="?page=advanced-plugin&tab=advanced" 
+                    href="?page=<?php echo esc_attr( self::SETTINGS_SLUG ); ?>&tab=advanced" 
                     class="nav-tab <?php echo $active_tab === 'advanced' ? 'nav-tab-active' : ''; ?>"
                 >
-                    Advanced
+                    <?php esc_html_e( 'Advanced', 'advanced-plugin' ); ?>
                 </a>
             </nav>
 
@@ -611,15 +547,37 @@ class Advanced_Plugin {
         ?>
         <form method="post" action="options.php">
             <?php
-            settings_fields( 'advanced_plugin_general' );
-            do_settings_sections( 'advanced_plugin_general' );
+            settings_fields( self::SETTINGS_SLUG . '_general' );
+            do_settings_sections( self::SETTINGS_SLUG . '_general' );
             submit_button();
             ?>
         </form>
         <?php
     }
 
-    // ... methods for other tabs
+    private function render_api_settings(): void {
+        ?>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields( self::SETTINGS_SLUG . '_api' );
+            do_settings_sections( self::SETTINGS_SLUG . '_api' );
+            submit_button();
+            ?>
+        </form>
+        <?php
+    }
+
+    private function render_advanced_settings(): void {
+        ?>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields( self::SETTINGS_SLUG . '_advanced' );
+            do_settings_sections( self::SETTINGS_SLUG . '_advanced' );
+            submit_button();
+            ?>
+        </form>
+        <?php
+    }
 }
 ```
 
@@ -672,7 +630,7 @@ $hub->register_plugin(
     [
         'description' => 'Clear and concise description',  // ✅ Helps users
         'version'     => self::VERSION,                    // ✅ Shows version
-        'tab_title'   => 'My Plugin',                     // ✅ Short title for tab
+        'tab_title'   => 'My Plugin',                      // ✅ Short title for tab
     ]
 );
 ```
@@ -723,13 +681,26 @@ public function render_settings(): void {
 
         <!-- Additional info -->
         <div class="card" style="margin-top: 20px;">
-            <h3>Information</h3>
-            <p><strong>Version:</strong> <?php echo esc_html( self::VERSION ); ?></p>
-            <p><strong>Status:</strong> <?php $this->render_status(); ?></p>
+            <h3><?php esc_html_e( 'Information', 'my-plugin' ); ?></h3>
+            <p><strong><?php esc_html_e( 'Version:', 'my-plugin' ); ?></strong> <?php echo esc_html( self::VERSION ); ?></p>
+            <p><strong><?php esc_html_e( 'Status:', 'my-plugin' ); ?></strong> <?php $this->render_status(); ?></p>
         </div>
     </div>
     <?php
 }
+```
+
+### 8. Use Translation Functions
+
+Always prepare your plugin for internationalization:
+
+```php
+// ✅ CORRECT
+esc_html_e( 'Settings', 'my-plugin' );
+__( 'Save Changes', 'my-plugin' );
+
+// ❌ INCORRECT
+echo 'Settings';
 ```
 
 ---
@@ -739,9 +710,11 @@ public function render_settings(): void {
 ### Problem 1: Plugin does not appear in dashboard
 
 **Symptoms:**
+
 - You don't see your plugin in the Silver Assist menu
 
 **Solution:**
+
 ```php
 // Verify you're registering on the correct hook
 add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
@@ -751,14 +724,16 @@ add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
 // add_action( 'admin_menu', ... )  // ❌ Conflicts with hub
 ```
 
-> **Note**: In v1.1.0+, Silver Assist appears as a top-level menu item, not under Settings.
+> **Note**: Silver Assist appears as a top-level menu item in the WordPress admin.
 
 ### Problem 2: Blank page when clicking "Configure"
 
 **Symptoms:**
+
 - Dashboard works but settings page is blank
 
 **Solution:**
+
 ```php
 // Verify your callback is valid
 $hub->register_plugin(
@@ -776,9 +751,11 @@ public function render_settings(): void {
 ### Problem 3: Settings are not saved
 
 **Symptoms:**
+
 - Form submits but values are not saved
 
 **Solution:**
+
 ```php
 // Make sure to use settings_fields with the SAME slug
 public function register_settings(): void {
@@ -799,9 +776,11 @@ public function render_settings(): void {
 ### Problem 4: Error "Class SettingsHub not found"
 
 **Symptoms:**
+
 - Fatal error when activating plugin
 
 **Solution:**
+
 ```php
 // 1. Verify Composer is installed
 composer install
@@ -823,9 +802,11 @@ if ( ! class_exists( SettingsHub::class ) ) {
 ### Problem 5: Hub tabs don't appear
 
 **Symptoms:**
+
 - Navigation tabs between plugins are not shown
 
 **Solution:**
+
 ```php
 // Tabs are enabled by default
 // If you want to disable them:
@@ -834,15 +815,17 @@ $hub->enable_tabs( false );  // Disable
 $hub->enable_tabs( true );   // Enable (default)
 ```
 
-### Problem 6: Conflict with existing standalone page
+### Problem 6: Multiple menu entries appear
 
 **Symptoms:**
+
 - Two menu entries appear for your plugin
 
 **Solution:**
+
 ```php
+// ❌ INCORRECT - Both registrations are active
 public function __construct() {
-    // ❌ INCORRECT - Both registrations are active
     add_action( 'admin_menu', [ $this, 'register_standalone' ] );
     add_action( 'plugins_loaded', [ $this, 'register_with_hub' ] );
 }
@@ -911,4 +894,3 @@ If you encounter problems during implementation:
 
 **Last updated**: October 8, 2025  
 **Hub Version**: 1.0.0 (Development)
-
