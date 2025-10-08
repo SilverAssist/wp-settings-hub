@@ -31,7 +31,6 @@ final class SettingsHub {
 	 *     name: string,
 	 *     slug: string,
 	 *     callback: callable,
-	 *     icon_url?: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string
@@ -86,7 +85,6 @@ final class SettingsHub {
 	 * @param string   $name        Display name for the plugin.
 	 * @param callable $callback    Function to render the plugin's settings page.
 	 * @param array{
-	 *     icon_url?: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string
@@ -224,7 +222,6 @@ final class SettingsHub {
 	 *     name: string,
 	 *     slug: string,
 	 *     callback: callable,
-	 *     icon_url?: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string
@@ -234,12 +231,6 @@ final class SettingsHub {
 		$settings_url = admin_url( 'admin.php?page=' . $plugin['slug'] );
 		?>
 		<div class="card" style="padding: 20px;">
-			<?php if ( ! empty( $plugin['icon_url'] ) ) : ?>
-				<div style="margin-bottom: 15px;">
-					<img src="<?php echo esc_url( $plugin['icon_url'] ); ?>" alt="<?php echo esc_attr( $plugin['name'] ); ?>" style="width: 48px; height: 48px;">
-				</div>
-			<?php endif; ?>
-
 			<h2 style="margin: 0 0 10px 0; font-size: 16px;">
 				<?php echo esc_html( $plugin['name'] ); ?>
 				<?php if ( ! empty( $plugin['version'] ) ) : ?>
@@ -269,7 +260,6 @@ final class SettingsHub {
 	 *     name: string,
 	 *     slug: string,
 	 *     callback: callable,
-	 *     icon_url?: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string
@@ -328,7 +318,6 @@ final class SettingsHub {
 	 *     name: string,
 	 *     slug: string,
 	 *     callback: callable,
-	 *     icon_url?: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string

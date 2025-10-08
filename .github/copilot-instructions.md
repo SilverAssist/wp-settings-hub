@@ -96,7 +96,6 @@ $hub->register_plugin(
     [
         'description' => '...',
         'version' => '1.0.0',
-        'icon_url' => '...',
         'tab_title' => '...',
     ]
 );

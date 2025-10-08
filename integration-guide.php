@@ -68,7 +68,6 @@ final class My_Silver_Assist_Plugin {
 			[
 				'description' => 'This is my awesome Silver Assist plugin that does something great.',
 				'version'     => self::VERSION,
-				'icon_url'    => plugin_dir_url( __FILE__ ) . 'assets/icon.png',
 				'tab_title'   => 'My Plugin', // Optional: custom tab title.
 			]
 		);
@@ -336,15 +335,12 @@ class Existing_Plugin {
  * 4. **Version Display**: Include your plugin version in the registration args
  *    so it appears on the dashboard card.
  *
- * 5. **Icon**: Provide a 48x48px icon for the dashboard card. It should be
- *    a PNG or SVG file with a transparent background.
- *
- * 6. **Tab Title**: You can use a shorter title for the tab if your plugin
+ * 5. **Tab Title**: You can use a shorter title for the tab if your plugin
  *    name is long. Use the 'tab_title' argument.
  *
- * 7. **Settings API**: Continue using WordPress Settings API (register_setting,
+ * 6. **Settings API**: Continue using WordPress Settings API (register_setting,
  *    add_settings_section, etc.) as normal. The hub only handles menu creation.
  *
- * 8. **Translations**: Use your plugin's text domain for all strings in your
+ * 7. **Translations**: Use your plugin's text domain for all strings in your
  *    settings page. The hub uses 'silverassist-settings-hub' for its own strings.
  */

@@ -72,7 +72,6 @@ $hub->register_plugin(
     [
         'description' => 'Description of my plugin',
         'version'     => '1.0.0',
-        'icon_url'    => plugin_dir_url( __FILE__ ) . 'assets/icon.png',
         'tab_title'   => 'My Plugin', // Optional: custom tab title
     ]
 );
@@ -102,10 +101,13 @@ public function render_settings(): void {
 
 ### 3. That's It!
 
-Your plugin now appears under the **Silver Assist** top-level menu with:
-- A card on the dashboard showing name, description, version, and icon
-- A dedicated settings page as a submenu with optional tabs navigation
-- Automatic cross-plugin navigation (if tabs are enabled)
+Your plugin will now appear:
+
+- A card on the dashboard showing name, description, and version
+- A submenu item under "Silver Assist"
+- Optional: in the tabs navigation if tabs are enabled
+
+---
 
 ## Complete Example
 
@@ -200,11 +202,11 @@ Get singleton instance of the hub.
 Register a plugin with the settings hub.
 
 **Parameters**:
+
 - `$slug` (string): Unique plugin slug (e.g., `'post-revalidate'`)
 - `$name` (string): Display name for the plugin
 - `$callback` (callable): Function to render the plugin's settings page
 - `$args` (array, optional): Additional arguments:
-  - `icon_url` (string): URL to plugin icon (48x48px recommended)
   - `description` (string): Short description shown on dashboard card
   - `version` (string): Plugin version number
   - `tab_title` (string): Custom title for tab (defaults to `$name`)

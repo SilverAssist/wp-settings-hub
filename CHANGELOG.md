@@ -8,13 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
 - Improved menu structure from Settings submenu to top-level menu
 - Dashboard URL changed from `options-general.php?page=silver-assist` to `admin.php?page=silver-assist`
 - Plugin URLs changed from `options-general.php?page={slug}` to `admin.php?page={slug}`
 - "Silver Assist" now appears as a top-level menu item with dashicons-shield icon
 - Plugins now appear as proper submenus under "Silver Assist" parent menu
 
+### Removed
+
+- Removed `icon_url` parameter from plugin registration (dashboard cards no longer show plugin icons)
+
 ### Added
+
 - Dashboard submenu item under Silver Assist for better UX
 - Custom icon (dashicons-shield) for Silver Assist menu
 - Menu positioned at priority 80 in the admin menu

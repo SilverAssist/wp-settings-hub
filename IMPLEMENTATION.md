@@ -157,7 +157,6 @@ class My_Plugin {
             [
                 'description' => 'Short description of your plugin',
                 'version'     => '1.0.0',   // Your plugin version
-                'icon_url'    => plugin_dir_url( __FILE__ ) . 'assets/icon.png', // Optional
                 'tab_title'   => 'My Plugin', // Optional: short title for tab
             ]
         );
@@ -377,7 +376,6 @@ class API_Plugin {
             [
                 'description' => 'Configure your API key to connect external services',
                 'version'     => '1.2.0',
-                'icon_url'    => plugin_dir_url( __FILE__ ) . 'assets/icon.png',
             ]
         );
     }
@@ -674,7 +672,6 @@ $hub->register_plugin(
     [
         'description' => 'Clear and concise description',  // ✅ Helps users
         'version'     => self::VERSION,                    // ✅ Shows version
-        'icon_url'    => $this->get_icon_url(),           // ✅ Attractive visual
         'tab_title'   => 'My Plugin',                     // ✅ Short title for tab
     ]
 );
@@ -877,7 +874,7 @@ Use this checklist to ensure the implementation is complete:
 - [ ] Created `register_with_hub()` method with class verification
 - [ ] Added fallback to standalone page if hub is not available
 - [ ] Registered plugin with unique slug, name, and callback
-- [ ] Included metadata: description, version, icon_url (optional)
+- [ ] Included metadata: description, version, tab_title (all optional)
 - [ ] Maintained settings registration with WordPress Settings API
 - [ ] `render_settings()` callback works correctly
 - [ ] Verified settings are saved correctly
