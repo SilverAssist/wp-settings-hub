@@ -583,6 +583,255 @@ class Advanced_Plugin {
 
 ---
 
+## 🎯 Custom Dashboard Actions
+
+The Settings Hub allows you to add custom action buttons to your plugin's dashboard card. This is useful for features like "Check Updates", "Clear Cache", or "Run Diagnostics".
+
+### Action Button Structure
+
+Actions are defined in the `actions` parameter when registering your plugin:
+
+```php
+$hub->register_plugin(
+    'my-plugin',
+    'My Plugin',
+    [ $this, 'render_settings' ],
+    [
+        'description' => 'Description of my plugin',
+        'version'     => '1.0.0',
+        'actions'     => [
+            [
+                'label'    => 'Button Text',
+                'url'      => 'https://example.com',  // Optional: direct link
+                'callback' => [ $this, 'method' ],    // Optional: JavaScript callback
+                'class'    => 'button',               // Optional: CSS classes
+            ],
+        ],
+    ]
+);
+```
+
+### Action Types
+
+#### 1. URL-Based Actions (Direct Links)
+
+For simple navigation or redirects:
+
+```php
+'actions' => [
+    [
+        'label' => 'Documentation',
+        'url'   => 'https://docs.example.com',
+        'class' => 'button',
+    ],
+    [
+        'label' => 'View Updates',
+        'url'   => admin_url( 'update-core.php' ),
+        'class' => 'button button-primary',
+    ],
+]
+```
+
+#### 2. Callback-Based Actions (JavaScript)
+
+For interactive functionality:
+
+```php
+'actions' => [
+    [
+        'label'    => 'Clear Cache',
+        'callback' => function() {
+            ?>
+            if (confirm('Clear cache?')) {
+                console.log('Cache cleared!');
+                alert('Cache cleared successfully!');
+            }
+            <?php
+        },
+        'class' => 'button',
+    ],
+]
+```
+
+### Integration with wp-github-updater
+
+Here's a complete example showing how to integrate the "Check Updates" button when using the `silverassist/wp-github-updater` package:
+
+```php
+<?php
+namespace SilverAssist\MyPlugin;
+
+use SilverAssist\SettingsHub\SettingsHub;
+use SilverAssist\WpGithubUpdater\Updater;
+use SilverAssist\WpGithubUpdater\UpdaterConfig;
+
+class Plugin {
+	private const VERSION = '1.0.0';
+	private const PLUGIN_SLUG = 'my-plugin';
+	private const GITHUB_REPO = 'SilverAssist/my-plugin';
+
+	private ?Updater $updater = null;
+
+	public function __construct() {
+		add_action( 'plugins_loaded', array( $this, 'init_updater' ) );
+		add_action( 'plugins_loaded', array( $this, 'register_with_hub' ) );
+	}
+
+	public function init_updater(): void {
+		if ( ! class_exists( Updater::class ) ) {
+			return;
+		}
+
+		$config = new UpdaterConfig(
+			__FILE__,
+			self::GITHUB_REPO,
+			array(
+				'text_domain' => 'my-plugin',
+				'ajax_action' => 'my_plugin_check_updates',
+				'ajax_nonce'  => 'my_plugin_updates_nonce',
+			)
+		);
+
+		$this->updater = new Updater( $config );
+	}
+
+	public function register_with_hub(): void {
+		if ( ! class_exists( SettingsHub::class ) ) {
+			return;
+		}
+
+		$hub = SettingsHub::get_instance();
+
+		// Prepare actions array
+		$actions = array();
+
+		// Add "Check Updates" button if updater is available
+		if ( null !== $this->updater ) {
+			$actions[] = array(
+				'label'    => __( 'Check Updates', 'my-plugin' ),
+				'callback' => array( $this, 'render_check_updates_script' ),
+				'class'    => 'button',
+			);
+		}
+
+		$hub->register_plugin(
+			self::PLUGIN_SLUG,
+			__( 'My Plugin', 'my-plugin' ),
+			array( $this, 'render_settings' ),
+			array(
+				'description' => __( 'Plugin with GitHub updates', 'my-plugin' ),
+				'version'     => self::VERSION,
+				'actions'     => $actions,
+			)
+		);
+	}
+
+	public function render_check_updates_script( string $plugin_slug ): void {
+		// The updater provides manualVersionCheck() AJAX endpoint
+		?>
+		var button = event.target;
+		var originalText = button.textContent;
+		button.disabled = true;
+		button.textContent = '<?php esc_html_e( 'Checking...', 'my-plugin' ); ?>';
+
+		jQuery.post(ajaxurl, {
+			action: 'my_plugin_check_updates',
+			nonce: '<?php echo esc_js( wp_create_nonce( 'my_plugin_updates_nonce' ) ); ?>'
+		}).done(function(response) {
+			if (response.success) {
+				if (response.data.update_available) {
+					button.textContent = '<?php esc_html_e( 'Update Available!', 'my-plugin' ); ?>';
+					button.classList.add('button-primary');
+					setTimeout(function() {
+						window.location.href = '<?php echo esc_js( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>';
+					}, 1500);
+				} else {
+					button.textContent = '<?php esc_html_e( 'Up to Date', 'my-plugin' ); ?>';
+					setTimeout(function() {
+						button.textContent = originalText;
+						button.disabled = false;
+					}, 2000);
+				}
+			} else {
+				button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+				setTimeout(function() {
+					button.textContent = originalText;
+					button.disabled = false;
+				}, 2000);
+			}
+		}).fail(function() {
+			button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+			setTimeout(function() {
+				button.textContent = originalText;
+				button.disabled = false;
+			}, 2000);
+		});
+		<?php
+	}
+
+	public function render_settings(): void {
+		// Your settings page
+	}
+}
+```
+
+### Alternative: Using WordPress Action Hook
+
+You can also add actions using the `silverassist_settings_hub_plugin_actions` hook:
+
+```php
+add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin ) {
+    // Only add button for your plugin
+    if ( $slug !== 'my-plugin' ) {
+        return;
+    }
+
+    // Check if updater is available
+    if ( ! class_exists( Updater::class ) ) {
+        return;
+    }
+
+    ?>
+    <a href="<?php echo esc_url( admin_url( 'update-core.php' ) ); ?>" class="button">
+        <?php esc_html_e( 'Check Updates', 'my-plugin' ); ?>
+    </a>
+    <?php
+}, 10, 2 );
+```
+
+### Best Practices for Actions
+
+1. **Conditional Registration**: Only add actions when the required functionality is available
+   ```php
+   if ( $this->updater !== null ) {
+       $actions[] = [ /* ... */ ];
+   }
+   ```
+
+2. **Proper Escaping**: Always escape output in JavaScript callbacks
+   ```php
+   <?php echo esc_js( $variable ); ?>
+   ```
+
+3. **User Feedback**: Provide clear feedback for button actions
+   ```php
+   button.textContent = '<?php esc_html_e( 'Processing...', 'my-plugin' ); ?>';
+   ```
+
+4. **Error Handling**: Handle errors gracefully
+   ```php
+   .fail(function() {
+       button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+   });
+   ```
+
+5. **Security**: Use nonces for AJAX actions
+   ```php
+   wp_create_nonce( 'check_update_' . $plugin_slug )
+   ```
+
+---
+
 ## ✅ Best Practices
 
 ### 1. Use Constants for Slugs

@@ -69,6 +69,22 @@ final class My_Silver_Assist_Plugin {
 				'description' => 'This is my awesome Silver Assist plugin that does something great.',
 				'version'     => self::VERSION,
 				'tab_title'   => 'My Plugin', // Optional: custom tab title.
+				'actions'     => [
+					// Example: Add a "Check Updates" button (if using wp-github-updater).
+					[
+						'label' => 'Check Updates',
+						'url'   => admin_url( 'update-core.php' ),
+						'class' => 'button',
+					],
+					// Example: Add custom action with callback.
+					[
+						'label'    => 'Clear Cache',
+						'callback' => function() {
+							echo 'console.log("Cache cleared!");';
+						},
+						'class'    => 'button',
+					],
+				],
 			]
 		);
 
@@ -343,4 +359,201 @@ class Existing_Plugin {
  *
  * 7. **Translations**: Use your plugin's text domain for all strings in your
  *    settings page. The hub uses 'silverassist-settings-hub' for its own strings.
+ *
+ * 8. **Custom Actions**: You can add custom action buttons to the dashboard cards
+ *    using the 'actions' parameter. This is useful for features like "Check Updates".
  */
+
+/**
+ * =============================================================================
+ * EXAMPLE: Integration with wp-github-updater Package
+ * =============================================================================
+ *
+ * This example shows how to add a "Check Updates" button when using the
+ * silverassist/wp-github-updater package for automatic plugin updates.
+ */
+
+/*
+use SilverAssist\SettingsHub\SettingsHub;
+use SilverAssist\WpGithubUpdater\Updater;
+use SilverAssist\WpGithubUpdater\UpdaterConfig;
+
+class My_Plugin_With_Updates {
+	private const VERSION = '1.0.0';
+	private const PLUGIN_SLUG = 'my-plugin';
+	private const GITHUB_REPO = 'SilverAssist/my-plugin';
+
+	private ?Updater $updater = null;
+
+	public function __construct() {
+		add_action( 'plugins_loaded', array( $this, 'init_updater' ) );
+		add_action( 'plugins_loaded', array( $this, 'register_with_hub' ) );
+	}
+
+	public function init_updater(): void {
+		if ( ! class_exists( Updater::class ) ) {
+			return;
+		}
+
+		$config = new UpdaterConfig(
+			__FILE__,
+			self::GITHUB_REPO,
+			array(
+				'text_domain' => 'my-plugin',
+				'ajax_action' => 'my_plugin_check_updates',
+				'ajax_nonce'  => 'my_plugin_updates_nonce',
+			)
+		);
+
+		$this->updater = new Updater( $config );
+	}
+
+	public function register_with_hub(): void {
+		if ( ! class_exists( SettingsHub::class ) ) {
+			return;
+		}
+
+		$hub = SettingsHub::get_instance();
+
+		// Prepare actions array
+		$actions = array();
+
+		// Add "Check Updates" button if updater is available
+		if ( null !== $this->updater ) {
+			$actions[] = array(
+				'label'    => __( 'Check Updates', 'my-plugin' ),
+				'callback' => array( $this, 'render_check_updates_script' ),
+				'class'    => 'button',
+			);
+		}
+
+		$hub->register_plugin(
+			self::PLUGIN_SLUG,
+			__( 'My Plugin', 'my-plugin' ),
+			array( $this, 'render_settings' ),
+			array(
+				'description' => __( 'My plugin with automatic GitHub updates', 'my-plugin' ),
+				'version'     => self::VERSION,
+				'actions'     => $actions,
+			)
+		);
+	}
+
+	public function render_check_updates_script( string $plugin_slug ): void {
+		// Output JavaScript to check for updates via AJAX
+		// Uses the updater's built-in manualVersionCheck() method
+		?>
+		var button = event.target;
+		var originalText = button.textContent;
+		button.disabled = true;
+		button.textContent = '<?php esc_html_e( 'Checking...', 'my-plugin' ); ?>';
+
+		jQuery.post(ajaxurl, {
+			action: 'my_plugin_check_updates',
+			nonce: '<?php echo esc_js( wp_create_nonce( 'my_plugin_updates_nonce' ) ); ?>'
+		}).done(function(response) {
+			if (response.success) {
+				if (response.data.update_available) {
+					button.textContent = '<?php esc_html_e( 'Update Available!', 'my-plugin' ); ?>';
+					button.classList.add('button-primary');
+					// Redirect to updates page after 1.5 seconds
+					setTimeout(function() {
+						window.location.href = '<?php echo esc_js( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>';
+					}, 1500);
+				} else {
+					button.textContent = '<?php esc_html_e( 'Up to Date', 'my-plugin' ); ?>';
+					// Reset button after 2 seconds
+					setTimeout(function() {
+						button.textContent = originalText;
+						button.disabled = false;
+					}, 2000);
+				}
+			} else {
+				button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+				console.error('Update check failed:', response.data ? response.data.message : 'Unknown error');
+				// Reset button after 2 seconds
+				setTimeout(function() {
+					button.textContent = originalText;
+					button.disabled = false;
+				}, 2000);
+			}
+		}).fail(function(xhr, status, error) {
+			button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+			console.error('AJAX failed:', error);
+			// Reset button after 2 seconds
+			setTimeout(function() {
+				button.textContent = originalText;
+				button.disabled = false;
+			}, 2000);
+		});
+		<?php
+	}
+
+	public function render_settings(): void {
+		// Your settings page rendering code
+	}
+}
+
+// Alternative: Using WordPress action hook to add button externally
+add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin ) {
+	// Only add button for our plugin
+	if ( 'my-plugin' !== $slug ) {
+		return;
+	}
+
+	// Check if updater class is available
+	if ( ! class_exists( 'SilverAssist\\WpGithubUpdater\\Updater' ) ) {
+		return;
+	}
+
+	// Render "Check Updates" button with inline JavaScript
+	?>
+	<button 
+		type="button" 
+		class="button sa-check-updates" 
+		data-plugin="<?php echo esc_attr( $slug ); ?>"
+		data-action="my_plugin_check_updates"
+		data-nonce="<?php echo esc_attr( wp_create_nonce( 'my_plugin_updates_nonce' ) ); ?>"
+	>
+		<?php esc_html_e( 'Check Updates', 'my-plugin' ); ?>
+	</button>
+	<script>
+	(function($) {
+		'use strict';
+		
+		$('.sa-check-updates[data-plugin="<?php echo esc_js( $slug ); ?>"]').on('click', function(e) {
+			e.preventDefault();
+			
+			var $button = $(this);
+			var originalText = $button.text();
+			
+			$button.prop('disabled', true).text('<?php esc_html_e( 'Checking...', 'my-plugin' ); ?>');
+			
+			$.post(ajaxurl, {
+				action: $button.data('action'),
+				nonce: $button.data('nonce')
+			}).done(function(response) {
+				if (response.success && response.data.update_available) {
+					$button.text('<?php esc_html_e( 'Update Available!', 'my-plugin' ); ?>')
+						   .addClass('button-primary');
+					setTimeout(function() {
+						window.location.href = '<?php echo esc_js( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>';
+					}, 1500);
+				} else {
+					$button.text('<?php esc_html_e( 'Up to Date', 'my-plugin' ); ?>');
+					setTimeout(function() {
+						$button.text(originalText).prop('disabled', false);
+					}, 2000);
+				}
+			}).fail(function() {
+				$button.text('<?php esc_html_e( 'Error', 'my-plugin' ); ?>');
+				setTimeout(function() {
+					$button.text(originalText).prop('disabled', false);
+				}, 2000);
+			});
+		});
+	})(jQuery);
+	</script>
+	<?php
+}, 10, 2 );
+*/

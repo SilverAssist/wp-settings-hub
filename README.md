@@ -152,6 +152,150 @@ $hub = SettingsHub::get_instance();
 $parent_slug = $hub->get_parent_slug(); // Returns 'silver-assist'
 ```
 
+### Add Custom Dashboard Actions
+
+Add action buttons to your plugin's dashboard card:
+
+```php
+$hub->register_plugin(
+    'my-plugin',
+    'My Plugin',
+    [ $this, 'render_settings' ],
+    [
+        'description' => 'Plugin description',
+        'version'     => '1.0.0',
+        'actions'     => [
+            // URL-based action (direct link)
+            [
+                'label' => 'Documentation',
+                'url'   => 'https://docs.example.com',
+                'class' => 'button',
+            ],
+            // Callback-based action (JavaScript)
+            [
+                'label'    => 'Check Updates',
+                'callback' => function() {
+                    ?>
+                    alert('Checking for updates...');
+                    <?php
+                },
+                'class' => 'button button-primary',
+            ],
+        ],
+    ]
+);
+```
+
+**Integration with wp-github-updater**:
+
+If you're using the `silverassist/wp-github-updater` package, you can add a "Check Updates" button:
+
+```php
+use SilverAssist\WpGithubUpdater\Updater;
+use SilverAssist\WpGithubUpdater\UpdaterConfig;
+
+class My_Plugin {
+    private ?Updater $updater = null;
+
+    public function init_updater(): void {
+        if ( ! class_exists( UpdaterConfig::class ) ) {
+            return;
+        }
+
+        $config = new UpdaterConfig(
+            __FILE__,
+            'SilverAssist/my-plugin',
+            array(
+                'text_domain' => 'my-plugin',
+                'ajax_action' => 'my_plugin_check_updates',
+                'ajax_nonce'  => 'my_plugin_updates_nonce',
+            )
+        );
+
+        $this->updater = new Updater( $config );
+    }
+
+    public function register_with_hub(): void {
+        $hub = SettingsHub::get_instance();
+        
+        $actions = array();
+        
+        // Add update checker if available
+        if ( null !== $this->updater ) {
+            $actions[] = array(
+                'label'    => __( 'Check Updates', 'my-plugin' ),
+                'callback' => array( $this, 'render_update_check' ),
+                'class'    => 'button',
+            );
+        }
+        
+        $hub->register_plugin(
+            'my-plugin',
+            'My Plugin',
+            array( $this, 'render_settings' ),
+            array(
+                'description' => 'Plugin with GitHub updates',
+                'version'     => '1.0.0',
+                'actions'     => $actions,
+            )
+        );
+    }
+    
+    public function render_update_check( string $slug ): void {
+        // The updater provides manualVersionCheck() AJAX endpoint
+        ?>
+        jQuery.post(ajaxurl, {
+            action: 'my_plugin_check_updates',
+            nonce: '<?php echo esc_js( wp_create_nonce( 'my_plugin_updates_nonce' ) ); ?>'
+        }).done(function(response) {
+            if (response.success && response.data.update_available) {
+                alert('<?php esc_html_e( 'Update available!', 'my-plugin' ); ?>');
+                window.location.href = '<?php echo esc_js( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>';
+            } else {
+                alert('<?php esc_html_e( 'Already up to date', 'my-plugin' ); ?>');
+            }
+        });
+        <?php
+    }
+}
+```
+
+### Using WordPress Action Hooks
+
+You can also add custom actions using the `silverassist_settings_hub_plugin_actions` hook:
+
+```php
+add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin ) {
+    if ( $slug !== 'my-plugin' ) {
+        return;
+    }
+    
+    ?>
+    <a href="<?php echo esc_url( admin_url( 'tools.php?page=diagnostics' ) ); ?>" class="button">
+        <?php esc_html_e( 'Run Diagnostics', 'my-plugin' ); ?>
+    </a>
+    <?php
+}, 10, 2 );
+```
+
+**Hook Parameters**:
+
+- `$slug` (string): The plugin slug
+- `$plugin` (array): The plugin data including name, callback, description, version, etc.
+
+---
+
+## Integration Examples
+
+See [`integration-guide.php`](integration-guide.php) for complete working examples including:
+
+- Basic plugin integration
+- wp-github-updater integration with "Check Updates" button
+- Custom action buttons
+- WordPress action hook usage
+
+---
+
 ## API Reference
 
 ### `SettingsHub::get_instance()`
@@ -173,6 +317,41 @@ Register a plugin with the settings hub.
   - `description` (string): Short description shown on dashboard card
   - `version` (string): Plugin version number
   - `tab_title` (string): Custom title for tab (defaults to `$name`)
+  - `actions` (array): Custom action buttons for the dashboard card
+
+**Action Button Structure**:
+
+Each action in the `actions` array should be an associative array with:
+- `label` (string, required): Button text
+- `url` (string, optional): Direct link URL (for navigation)
+- `callback` (callable, optional): JavaScript code to execute (for interactive actions)
+- `class` (string, optional): CSS classes for the button (default: `'button'`)
+
+**Example with Actions**:
+
+```php
+$hub->register_plugin(
+    'my-plugin',
+    'My Plugin',
+    [ $this, 'render_settings' ],
+    [
+        'description' => 'Plugin description',
+        'version'     => '1.0.0',
+        'actions'     => [
+            [
+                'label' => 'Check Updates',
+                'callback' => [ $this, 'render_update_check_script' ],
+                'class' => 'button',
+            ],
+            [
+                'label' => 'Documentation',
+                'url'   => 'https://docs.example.com',
+                'class' => 'button',
+            ],
+        ],
+    ]
+);
+```
 
 **Returns**: `void`
 

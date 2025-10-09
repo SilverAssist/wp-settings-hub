@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Custom action buttons support for dashboard plugin cards
+- `actions` parameter in `register_plugin()` for adding custom buttons
+- Support for URL-based actions (direct links)
+- Support for callback-based actions (JavaScript inline execution)
+- New `render_action_button()` method for rendering action buttons
+- WordPress action hook `silverassist_settings_hub_plugin_actions` for extensibility
+- Comprehensive documentation for wp-github-updater integration
+- Example implementations showing "Check Updates" button pattern
+- Complete integration guide for custom dashboard actions
+
 ## [1.0.0] - 2025-10-08
 
 ### Added

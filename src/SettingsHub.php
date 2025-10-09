@@ -33,7 +33,8 @@ final class SettingsHub {
 	 *     callback: callable,
 	 *     description?: string,
 	 *     version?: string,
-	 *     tab_title?: string
+	 *     tab_title?: string,
+	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
 	 * }>
 	 */
 	private array $plugins = array();
@@ -87,7 +88,8 @@ final class SettingsHub {
 	 * @param array{
 	 *     description?: string,
 	 *     version?: string,
-	 *     tab_title?: string
+	 *     tab_title?: string,
+	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
 	 * } $args Optional arguments for the plugin.
 	 */
 	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
@@ -224,7 +226,8 @@ final class SettingsHub {
 	 *     callback: callable,
 	 *     description?: string,
 	 *     version?: string,
-	 *     tab_title?: string
+	 *     tab_title?: string,
+	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
 	 * } $plugin Plugin data.
 	 */
 	private function render_plugin_card( array $plugin ): void {
@@ -246,11 +249,78 @@ final class SettingsHub {
 				</p>
 			<?php endif; ?>
 
-			<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary">
-				<?php esc_html_e( 'Configure', 'silverassist-settings-hub' ); ?>
-			</a>
+			<div class="plugin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+				<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary">
+					<?php esc_html_e( 'Configure', 'silverassist-settings-hub' ); ?>
+				</a>
+
+				<?php
+				// Render additional actions from plugins
+				if ( ! empty( $plugin['actions'] ) && is_array( $plugin['actions'] ) ) {
+					foreach ( $plugin['actions'] as $action ) {
+						$this->render_action_button( $action, $plugin['slug'] );
+					}
+				}
+
+				/**
+				 * Fires after the default Configure button in a plugin card.
+				 *
+				 * Allows plugins to add custom action buttons to their dashboard card.
+				 *
+				 * @since 1.1.0
+				 *
+				 * @param string $slug   The plugin slug.
+				 * @param array  $plugin The plugin data array.
+				 */
+				do_action( 'silverassist_settings_hub_plugin_actions', $plugin['slug'], $plugin );
+				?>
+			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render an action button.
+	 *
+	 * @param array{label: string, url?: string, callback?: callable, class?: string} $action Action data.
+	 * @param string $plugin_slug Plugin slug for callback context.
+	 */
+	private function render_action_button( array $action, string $plugin_slug ): void {
+		if ( empty( $action['label'] ) ) {
+			return;
+		}
+
+		$class = $action['class'] ?? 'button';
+
+		// If URL is provided, render as link
+		if ( ! empty( $action['url'] ) ) {
+			?>
+			<a href="<?php echo esc_url( $action['url'] ); ?>" class="<?php echo esc_attr( $class ); ?>">
+				<?php echo esc_html( $action['label'] ); ?>
+			</a>
+			<?php
+			return;
+		}
+
+		// If callback is provided, render as button with AJAX
+		if ( ! empty( $action['callback'] ) && is_callable( $action['callback'] ) ) {
+			$button_id = 'sa-action-' . sanitize_key( $plugin_slug . '-' . $action['label'] );
+			?>
+			<button 
+				type="button" 
+				id="<?php echo esc_attr( $button_id ); ?>" 
+				class="<?php echo esc_attr( $class ); ?>"
+				data-plugin="<?php echo esc_attr( $plugin_slug ); ?>"
+			>
+				<?php echo esc_html( $action['label'] ); ?>
+			</button>
+			<script type="text/javascript">
+				document.getElementById('<?php echo esc_js( $button_id ); ?>').addEventListener('click', function() {
+					<?php call_user_func( $action['callback'], $plugin_slug ); ?>
+				});
+			</script>
+			<?php
+		}
 	}
 
 	/**
@@ -262,7 +332,8 @@ final class SettingsHub {
 	 *     callback: callable,
 	 *     description?: string,
 	 *     version?: string,
-	 *     tab_title?: string
+	 *     tab_title?: string,
+	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
 	 * } $plugin Plugin data.
 	 */
 	private function render_plugin_page( array $plugin ): void {
@@ -320,7 +391,8 @@ final class SettingsHub {
 	 *     callback: callable,
 	 *     description?: string,
 	 *     version?: string,
-	 *     tab_title?: string
+	 *     tab_title?: string,
+	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
 	 * }> Registered plugins.
 	 */
 	public function get_plugins(): array {
