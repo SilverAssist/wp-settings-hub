@@ -11,3 +11,6 @@ parameters:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
         - vendor/php-stubs/wordpress-stubs
+    ignoreErrors:
+        # Defensive programming: checking types even when PHPDoc guarantees them
+        - '#Right side of && is always true#'
