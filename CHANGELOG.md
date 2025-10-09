@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-10-09
+
 ### Added
 
 - Custom action buttons support for dashboard plugin cards
@@ -18,6 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation for wp-github-updater integration
 - Example implementations showing "Check Updates" button pattern
 - Complete integration guide for custom dashboard actions
+
+### Documentation
+
+- Updated `integration-guide.php` with complete wp-github-updater example using real API
+- Added "Custom Dashboard Actions" section in `IMPLEMENTATION.md`
+- Updated `README.md` API reference with `actions` parameter documentation
+- All examples verified against `silverassist/wp-github-updater` v1.1.4
+
+### Technical
+
+- Uses `UpdaterConfig` for proper updater initialization
+- AJAX integration with updater's built-in `manualVersionCheck()` endpoint
+- Proper nonce security and error handling in JavaScript
+- Redirects to `plugins.php?plugin_status=upgrade` on update available
 
 ## [1.0.0] - 2025-10-08
 
