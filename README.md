@@ -271,7 +271,6 @@ This package is licensed under the [PolyForm Noncommercial License 1.0.0](LICENS
 ## Support
 
 For issues, feature requests, or questions:
-- **GitHub Issues**: [silverassist/wp-settings-hub](https://github.com/SilverAssist/wp-settings-hub/issues)
 - **Email**: support@silverassist.com
 
 ## Contributing
@@ -282,6 +281,6 @@ This is a proprietary package for Silver Assist plugins. Contributions are limit
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and changes.
 
-## Credits
+---
 
-Developed by [Silver Assist](https://silverassist.com) team.
+**Made with ❤️ by [Silver Assist](https://silverassist.com)**
