@@ -655,7 +655,20 @@ For interactive functionality:
 
 ### Integration with wp-github-updater
 
-Here's a complete example showing how to integrate the "Check Updates" button when using the `silverassist/wp-github-updater` package:
+Here's a complete example showing how to integrate the "Check Updates" button when using the `silverassist/wp-github-updater` package.
+
+**CRITICAL**: This implementation includes proper WordPress cache synchronization to ensure the Updates page (`update-core.php`) displays updates correctly.
+
+#### Understanding the Cache System
+
+WordPress uses a **two-tier cache system** for plugin updates:
+
+1. **Plugin-specific cache**: Transient `{plugin}_version_check` (GitHub API data)
+2. **WordPress system cache**: Site transient `update_plugins` (displayed in update-core.php)
+
+Both caches must be cleared and WordPress must be told to check for updates, otherwise `update-core.php` will show stale information even though the admin notice shows an update is available.
+
+#### Complete Implementation
 
 ```php
 <?php
@@ -675,6 +688,9 @@ class Plugin {
 	public function __construct() {
 		add_action( 'plugins_loaded', array( $this, 'init_updater' ) );
 		add_action( 'plugins_loaded', array( $this, 'register_with_hub' ) );
+		
+		// Register AJAX handler for manual update checks
+		add_action( 'wp_ajax_my_plugin_check_updates', array( $this, 'ajax_check_updates' ) );
 	}
 
 	public function init_updater(): void {
@@ -726,8 +742,104 @@ class Plugin {
 		);
 	}
 
+	/**
+	 * AJAX handler for manual update checks.
+	 * 
+	 * CRITICAL: This method implements proper cache synchronization to ensure
+	 * the WordPress Updates page displays current information.
+	 * 
+	 * Cache Clearing Flow:
+	 * 1. Clear plugin version cache (GitHub API data)
+	 * 2. Clear WordPress update cache (update-core.php data) ← CRITICAL!
+	 * 3. Force WordPress to check for updates NOW (triggers API call)
+	 * 4. Check if update is available
+	 * 5. Return result
+	 * 
+	 * Without steps 2 and 3, update-core.php will show stale data even though
+	 * the admin notice shows an update is available.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function ajax_check_updates(): void {
+		// 1. Validate nonce
+		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'my_plugin_updates_nonce' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Security validation failed', 'my-plugin' ),
+				)
+			);
+			return;
+		}
+
+		// 2. Check user capability
+		if ( ! current_user_can( 'update_plugins' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Insufficient permissions', 'my-plugin' ),
+				)
+			);
+			return;
+		}
+
+		// 3. Get updater instance
+		if ( null === $this->updater ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Updater not available', 'my-plugin' ),
+				)
+			);
+			return;
+		}
+
+		try {
+			// CRITICAL CACHE SYNCHRONIZATION STEPS:
+			
+			// Step 1: Clear plugin version cache (GitHub API cache)
+			$transient_key = dirname( plugin_basename( __FILE__ ) ) . '_version_check';
+			delete_transient( $transient_key );
+
+			// Step 2: Clear WordPress update cache (CRITICAL!)
+			// Without this, update-core.php will show stale data
+			delete_site_transient( 'update_plugins' );
+
+			// Step 3: Force WordPress to check for updates NOW
+			// This triggers the 'pre_set_site_transient_update_plugins' hook
+			// which wp-github-updater listens to and queries GitHub API
+			wp_update_plugins();
+
+			// 4. Get update status
+			$update_available = $this->updater->isUpdateAvailable();
+			$current_version  = $this->updater->getCurrentVersion();
+			$latest_version   = $this->updater->getLatestVersion();
+
+			// 5. Return success response
+			wp_send_json_success(
+				array(
+					'update_available' => $update_available,
+					'current_version'  => $current_version,
+					'latest_version'   => $latest_version,
+					'message'          => $update_available
+						? __( 'Update available!', 'my-plugin' )
+						: __( "You're up to date!", 'my-plugin' ),
+				)
+			);
+
+		} catch ( \Exception $e ) {
+			// Log error for debugging
+			error_log( 'My Plugin Update Check Error: ' . $e->getMessage() );
+
+			wp_send_json_error(
+				array(
+					'message' => __( 'Error checking for updates', 'my-plugin' ),
+				)
+			);
+		}
+	}
+
 	public function render_check_updates_script( string $plugin_slug ): void {
-		// The updater provides manualVersionCheck() AJAX endpoint
+		// Output JavaScript to check for updates via AJAX
 		?>
 		var button = event.target;
 		var originalText = button.textContent;
@@ -742,11 +854,13 @@ class Plugin {
 				if (response.data.update_available) {
 					button.textContent = '<?php esc_html_e( 'Update Available!', 'my-plugin' ); ?>';
 					button.classList.add('button-primary');
+					// Redirect to updates page after 1.5 seconds
 					setTimeout(function() {
-						window.location.href = '<?php echo esc_js( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>';
+						window.location.href = '<?php echo esc_js( admin_url( 'update-core.php' ) ); ?>';
 					}, 1500);
 				} else {
 					button.textContent = '<?php esc_html_e( 'Up to Date', 'my-plugin' ); ?>';
+					// Reset button after 2 seconds
 					setTimeout(function() {
 						button.textContent = originalText;
 						button.disabled = false;
@@ -754,13 +868,17 @@ class Plugin {
 				}
 			} else {
 				button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+				console.error('Update check failed:', response.data ? response.data.message : 'Unknown error');
+				// Reset button after 2 seconds
 				setTimeout(function() {
 					button.textContent = originalText;
 					button.disabled = false;
 				}, 2000);
 			}
-		}).fail(function() {
+		}).fail(function(xhr, status, error) {
 			button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+			console.error('AJAX failed:', error);
+			// Reset button after 2 seconds
 			setTimeout(function() {
 				button.textContent = originalText;
 				button.disabled = false;
@@ -775,9 +893,41 @@ class Plugin {
 }
 ```
 
+#### Common Mistakes to Avoid
+
+❌ **WRONG**: Only clearing plugin cache
+```php
+delete_transient( $transient_key );
+// Problem: WordPress core still has stale data
+```
+
+❌ **WRONG**: Clearing both caches but not forcing update
+```php
+delete_transient( $transient_key );
+delete_site_transient( 'update_plugins' );
+// Problem: Caches are empty but WordPress hasn't checked for updates
+```
+
+✅ **CORRECT**: Clear both caches AND force WordPress to check
+```php
+delete_transient( $transient_key );
+delete_site_transient( 'update_plugins' );
+wp_update_plugins();  // This is the critical step!
+```
+
+#### Testing Your Implementation
+
+1. Click "Check Updates" button on your dashboard card
+2. Wait for success message ("Update Available!" or "Up to Date")
+3. Navigate to Dashboard > Updates (`update-core.php`)
+4. Your plugin should appear in the list if an update is available
+5. You should be able to click "Update Now" immediately
+
+If the plugin doesn't appear on the Updates page after clicking "Check Updates", you're missing the cache synchronization steps.
+
 ### Alternative: Using WordPress Action Hook
 
-You can also add actions using the `silverassist_settings_hub_plugin_actions` hook:
+You can also add actions using the `silverassist_settings_hub_plugin_actions` hook. However, **note that if you use this approach for update checks, you still need to implement the complete cache synchronization flow**:
 
 ```php
 add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin ) {
@@ -791,12 +941,21 @@ add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin
         return;
     }
 
+    // IMPORTANT: Don't use a simple link for update checks
+    // You need to implement the cache synchronization flow
     ?>
-    <a href="<?php echo esc_url( admin_url( 'update-core.php' ) ); ?>" class="button">
+    <button 
+        type="button" 
+        class="button" 
+        onclick="myPluginCheckUpdates(this, '<?php echo esc_js( $slug ); ?>')"
+    >
         <?php esc_html_e( 'Check Updates', 'my-plugin' ); ?>
-    </a>
+    </button>
     <?php
 }, 10, 2 );
+
+// Remember to enqueue your JavaScript with the complete AJAX handler
+// that includes delete_site_transient() and wp_update_plugins() calls
 ```
 
 ### Best Practices for Actions

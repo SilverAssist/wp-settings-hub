@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-10-09
+
+### Fixed
+
+- **CRITICAL**: Updated all wp-github-updater integration examples with proper WordPress cache synchronization
+- Examples now include `delete_site_transient('update_plugins')` to clear WordPress core cache
+- Examples now include `wp_update_plugins()` to force immediate update check
+- Fixed redirect URL from `plugins.php?plugin_status=upgrade` to `update-core.php` for better UX
+- Added comprehensive AJAX handler implementation showing complete cache clearing flow
+- Added "Common Mistakes to Avoid" section explaining the two-tier cache system
+- Added "Testing Your Implementation" section with step-by-step validation
+
+### Documentation
+
+- Updated `integration-guide.php` with complete cache synchronization pattern
+- Updated `IMPLEMENTATION.md` with detailed explanation of WordPress two-tier cache system
+- Updated `README.md` with warning note about cache synchronization requirements
+- Added inline comments explaining each step of the cache clearing process
+- Clarified that WordPress uses both plugin-specific cache AND system-wide cache
+
+### Context
+
+- Without proper cache synchronization, the "Check Updates" button would trigger successfully but `update-core.php` would show stale data
+- Users would see admin notification about updates but couldn't actually install them
+- This fix ensures both caches are cleared and WordPress is forced to query GitHub API immediately
+
 ## [1.1.0] - 2025-10-09
 
 ### Added
@@ -34,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AJAX integration with updater's built-in `manualVersionCheck()` endpoint
 - Proper nonce security and error handling in JavaScript
 - Redirects to `plugins.php?plugin_status=upgrade` on update available
+
 
 ## [1.0.0] - 2025-10-08
 

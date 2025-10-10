@@ -190,6 +190,8 @@ $hub->register_plugin(
 
 If you're using the `silverassist/wp-github-updater` package, you can add a "Check Updates" button:
 
+> ⚠️ **Important**: When implementing update checks, you must properly synchronize both WordPress caches (plugin-specific and system-wide) to ensure the Updates page displays current information. See [IMPLEMENTATION.md](IMPLEMENTATION.md#integration-with-wp-github-updater) for the complete implementation with cache synchronization.
+
 ```php
 use SilverAssist\WpGithubUpdater\Updater;
 use SilverAssist\WpGithubUpdater\UpdaterConfig;
@@ -241,8 +243,10 @@ class My_Plugin {
         );
     }
     
+    // IMPORTANT: This is a simplified example. The complete implementation
+    // requires proper cache clearing with delete_site_transient() and wp_update_plugins().
+    // See IMPLEMENTATION.md for the full code.
     public function render_update_check( string $slug ): void {
-        // The updater provides manualVersionCheck() AJAX endpoint
         ?>
         jQuery.post(ajaxurl, {
             action: 'my_plugin_check_updates',
@@ -250,7 +254,7 @@ class My_Plugin {
         }).done(function(response) {
             if (response.success && response.data.update_available) {
                 alert('<?php esc_html_e( 'Update available!', 'my-plugin' ); ?>');
-                window.location.href = '<?php echo esc_js( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>';
+                window.location.href = '<?php echo esc_js( admin_url( 'update-core.php' ) ); ?>';
             } else {
                 alert('<?php esc_html_e( 'Already up to date', 'my-plugin' ); ?>');
             }
