@@ -11,7 +11,7 @@ This is **silverassist/wp-settings-hub**, a Composer package that provides centr
 - Provide optional tabs for cross-plugin navigation
 
 ### Architecture
-- **Language**: PHP 8.3+ with strict types
+- **Language**: PHP 8.2+ with strict types
 - **Pattern**: Singleton for SettingsHub class
 - **WordPress**: 6.5+ (uses Settings API, admin menus, hooks)
 - **Testing**: PHPUnit 10 with Brain Monkey for WordPress mocks
@@ -22,7 +22,7 @@ This is **silverassist/wp-settings-hub**, a Composer package that provides centr
 ## Code Standards
 
 ### PHP Requirements
-- PHP 8.3+ features required
+- PHP 8.2+ features required
 - Use `declare(strict_types=1);` in all files
 - Full type hints for parameters and return types
 - Use typed properties
@@ -124,6 +124,7 @@ composer qa           # Run all checks
 - Use WordPress-native UI components and classes
 - Maintain backward compatibility in minor versions
 - Follow semantic versioning for releases
+- PHP 8.2+ required for type system features
 
 ## Common Patterns
 
@@ -187,7 +188,7 @@ $hub->register_plugin( ... );
 4. Push tag: `git push origin v1.x.x`
 5. GitHub Actions automatically:
    - Validates code (PHPCS, PHPStan)
-   - Runs tests on PHP 8.3 and 8.4
+   - Runs tests on PHP 8.2, 8.3 and 8.4
    - Creates release with ZIP archive
    - Extracts changelog for release notes
 
@@ -199,7 +200,7 @@ $hub->register_plugin( ... );
 - **Fallback**: Plugins must work without the hub (graceful degradation)
 - **License**: PolyForm Noncommercial - free for noncommercial use only
 - **WordPress Compatibility**: 6.5+ required for menu APIs
-- **PHP Version**: 8.3+ required for type system features
+- **PHP Version**: 8.2+ required for type system features
 
 ## Related Projects
 

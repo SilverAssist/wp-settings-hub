@@ -64,7 +64,7 @@ Ensure your `composer.json` includes proper PSR-4 autoloading:
         }
     },
     "require": {
-        "php": ">=8.3",
+        "php": ">=8.2",
         "silverassist/wp-settings-hub": "^1.1"
     },
     "require-dev": {

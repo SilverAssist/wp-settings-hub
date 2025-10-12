@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Lowered PHP requirement from 8.3 to 8.2 for broader compatibility
+- Updated all documentation to reflect PHP 8.2+ requirement
+- GitHub Actions now tests on PHP 8.2, 8.3, and 8.4
+
 ## [1.1.2] - 2025-10-10
 
 ### Documentation
