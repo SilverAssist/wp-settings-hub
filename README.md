@@ -403,29 +403,113 @@ Get the parent menu slug.
 composer install
 ```
 
-### Run Tests
+### WordPress Test Suite (Required)
+
+This package requires WordPress Test Suite for testing:
 
 ```bash
-composer test
+# Install WordPress Test Suite
+bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
+
+# Set environment variable (add to your ~/.zshrc or ~/.bashrc for persistence)
+export WP_TESTS_DIR=/tmp/wordpress-tests-lib
 ```
 
-### Check Code Standards
+**Important**: Tests require the WordPress Test Suite to be installed. The installation script downloads and configures WordPress core test suite in `/tmp/wordpress-tests-lib`.
 
-```bash
-composer phpcs
-```
-
-### Run Static Analysis
-
-```bash
-composer phpstan
-```
+On macOS, you may need to set the `WP_TESTS_DIR` environment variable because `sys_get_temp_dir()` returns a user-specific path.
 
 ### Run All Quality Checks
 
 ```bash
+./scripts/run-quality-checks.sh all
+```
+
+This runs:
+- **PHPCBF**: Auto-fix code standards
+- **PHPCS**: Check code standards (WordPress-Extra)
+- **PHPStan**: Static analysis (Level 8)
+- **PHPUnit**: Test suite with WP_UnitTestCase
+
+### Running Tests
+
+```bash
+# Run all tests (unit + integration)
+composer test
+
+# Run only unit tests
+vendor/bin/phpunit --testsuite unit
+
+# Run only integration tests
+vendor/bin/phpunit --testsuite integration
+
+# Run with coverage
+composer test:coverage
+```
+
+**Test Suites:**
+- **Unit Tests**: Test individual methods and logic in isolation (10 tests)
+- **Integration Tests**: Test complete WordPress integration including admin menus, rendering, and multi-plugin scenarios (8 tests)
+
+### Individual Checks
+
+```bash
+# Auto-fix code standards
+composer phpcbf
+```
+```
+
+### WordPress Test Suite (Required)
+
+This package requires WordPress Test Suite for testing:
+
+```bash
+# Install WordPress Test Suite
+bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
+```
+
+**Important**: Tests require the WordPress Test Suite to be installed. The installation script above will download and configure WordPress core test suite in `/tmp/wordpress-tests-lib`.
+
+### Run All Quality Checks
+
+```bash
+./scripts/run-quality-checks.sh all
+```
+
+This runs:
+- **PHPCBF**: Auto-fix code standards
+- **PHPCS**: Check code standards (WordPress-Extra)
+- **PHPStan**: Static analysis (Level 8)
+- **PHPUnit**: Test suite (with WP_UnitTestCase if available)
+
+### Individual Checks
+
+```bash
+# Auto-fix code standards
+composer phpcbf
+
+# Check code standards
+composer phpcs
+
+# Run static analysis
+composer phpstan
+
+# Run tests
+composer phpunit
+
+# Run all (without auto-fix)
 composer qa
 ```
+
+### Quality Standards
+
+- ✅ **PHP 8.2+** with strict types
+- ✅ **WordPress Coding Standards** (WPCS)
+- ✅ **PHPStan Level 8** - no type errors
+- ✅ **100% test coverage** for new features
+- ✅ **Full PHPDoc** for all classes and methods
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## Architecture
 
@@ -458,7 +542,7 @@ For issues, feature requests, or questions:
 
 ## Contributing
 
-This is a proprietary package for Silver Assist plugins. Contributions are limited to Silver Assist team members.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## Changelog
 

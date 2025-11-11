@@ -21,6 +21,8 @@ namespace SilverAssist\SettingsHub;
 final class SettingsHub {
 	/**
 	 * Singleton instance.
+	 *
+	 * @var SettingsHub|null
 	 */
 	private static ?SettingsHub $instance = null;
 
@@ -48,11 +50,15 @@ final class SettingsHub {
 
 	/**
 	 * Whether the parent menu has been registered.
+	 *
+	 * @var bool
 	 */
 	private bool $parent_registered = false;
 
 	/**
 	 * Whether to render tabs for cross-plugin navigation.
+	 *
+	 * @var bool
 	 */
 	private bool $render_tabs = true;
 
@@ -82,15 +88,17 @@ final class SettingsHub {
 	 * Automatically creates the parent "Silver Assist" menu if it doesn't exist,
 	 * and adds the plugin as a submenu item.
 	 *
-	 * @param string   $slug        Unique plugin slug (e.g., 'post-revalidate').
-	 * @param string   $name        Display name for the plugin.
-	 * @param callable $callback    Function to render the plugin's settings page.
-	 * @param array{
-	 *     description?: string,
-	 *     version?: string,
-	 *     tab_title?: string,
-	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
-	 * } $args Optional arguments for the plugin.
+	 * @param string                                                      $slug     Unique plugin slug (e.g., 'post-revalidate').
+	 * @param string                                                      $name     Display name for the plugin.
+	 * @param callable                                                    $callback Function to render the plugin's settings page.
+	 * @param array<string, string|array<array<string, string|callable>>> $args {
+	 *     Optional arguments for the plugin.
+	 *
+	 *     @type string   $description Plugin description.
+	 *     @type string   $version     Plugin version number.
+	 *     @type string   $tab_title   Custom tab title (defaults to plugin name).
+	 *     @type array[]  $actions     Array of action buttons with label, url/callback, and class.
+	 * }
 	 */
 	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
 		// Store plugin data.
@@ -220,32 +228,38 @@ final class SettingsHub {
 	/**
 	 * Render a plugin card on the dashboard.
 	 *
-	 * @param array{
-	 *     name: string,
-	 *     slug: string,
-	 *     callback: callable,
-	 *     description?: string,
-	 *     version?: string,
-	 *     tab_title?: string,
-	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
-	 * } $plugin Plugin data.
+	 * @param array<string, string|callable|array<array<string, string|callable>>> $plugin {
+	 *     Plugin data array.
+	 *
+	 *     @type string   $name        Plugin name.
+	 *     @type string   $slug        Plugin slug.
+	 *     @type callable $callback    Settings page callback.
+	 *     @type string   $description Optional. Plugin description.
+	 *     @type string   $version     Optional. Plugin version.
+	 *     @type string   $tab_title   Optional. Tab title.
+	 *     @type array[]  $actions     Optional. Action buttons.
+	 * }
 	 */
 	private function render_plugin_card( array $plugin ): void {
-		$settings_url = admin_url( 'admin.php?page=' . $plugin['slug'] );
+		$slug         = (string) $plugin['slug'];
+		$settings_url = admin_url( 'admin.php?page=' . $slug );
+		$name         = (string) $plugin['name'];
+		$description  = $plugin['description'] ?? '';
+		$version      = $plugin['version'] ?? '';
 		?>
 		<div class="card" style="padding: 20px;">
 			<h2 style="margin: 0 0 10px 0; font-size: 16px;">
-				<?php echo esc_html( $plugin['name'] ); ?>
-				<?php if ( ! empty( $plugin['version'] ) ) : ?>
+				<?php echo esc_html( $name ); ?>
+				<?php if ( ! empty( $version ) ) : ?>
 					<span style="font-size: 12px; color: #666; font-weight: normal;">
-						v<?php echo esc_html( $plugin['version'] ); ?>
+						v<?php echo esc_html( (string) $version ); ?>
 					</span>
 				<?php endif; ?>
 			</h2>
 
-			<?php if ( ! empty( $plugin['description'] ) ) : ?>
+			<?php if ( ! empty( $description ) ) : ?>
 				<p style="margin: 0 0 15px 0; color: #666;">
-					<?php echo esc_html( $plugin['description'] ); ?>
+					<?php echo esc_html( (string) $description ); ?>
 				</p>
 			<?php endif; ?>
 
@@ -324,15 +338,17 @@ final class SettingsHub {
 	/**
 	 * Render a plugin's settings page with optional tabs navigation.
 	 *
-	 * @param array{
-	 *     name: string,
-	 *     slug: string,
-	 *     callback: callable,
-	 *     description?: string,
-	 *     version?: string,
-	 *     tab_title?: string,
-	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
-	 * } $plugin Plugin data.
+	 * @param array<string, string|callable|array<array<string, string|callable>>> $plugin {
+	 *     Plugin data array.
+	 *
+	 *     @type string   $name        Plugin name.
+	 *     @type string   $slug        Plugin slug.
+	 *     @type callable $callback    Settings page callback.
+	 *     @type string   $description Optional. Plugin description.
+	 *     @type string   $version     Optional. Plugin version.
+	 *     @type string   $tab_title   Optional. Tab title.
+	 *     @type array[]  $actions     Optional. Action buttons.
+	 * }
 	 */
 	private function render_plugin_page( array $plugin ): void {
 		?>

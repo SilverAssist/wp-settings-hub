@@ -7,11 +7,9 @@
 
 declare(strict_types=1);
 
-namespace SilverAssist\SettingsHub\Tests;
+namespace SilverAssist\SettingsHub\Tests\Unit;
 
-use Brain\Monkey;
-use Brain\Monkey\Functions;
-use PHPUnit\Framework\TestCase;
+use SilverAssist\SettingsHub\Tests\TestCase;
 use SilverAssist\SettingsHub\SettingsHub;
 
 /**
@@ -25,22 +23,7 @@ final class SettingsHubTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		Monkey\setUp();
-
-		// Mock WordPress functions.
-		Functions\when( 'add_action' )->justReturn( true );
-		Functions\when( 'add_options_page' )->justReturn( 'silver-assist' );
-		Functions\when( 'add_submenu_page' )->justReturn( 'plugin-slug' );
-		Functions\when( 'admin_url' )->returnArg();
-		Functions\when( '__' )->returnArg();
-		Functions\when( 'esc_html' )->returnArg();
-		Functions\when( 'esc_html_e' )->alias(
-			static function ( string $text ): void {
-				echo $text; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			}
-		);
-		Functions\when( 'esc_attr' )->returnArg();
-		Functions\when( 'esc_url' )->returnArg();
+		// WordPress functions are now available via WP_UnitTestCase or Brain Monkey trait.
 	}
 
 	/**
@@ -53,7 +36,6 @@ final class SettingsHubTest extends TestCase {
 		$instance->setAccessible( true );
 		$instance->setValue( null, null );
 
-		Monkey\tearDown();
 		parent::tearDown();
 	}
 

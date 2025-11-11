@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2025-11-10
+
+### Changed
+
+- **BREAKING**: Removed Brain Monkey dependency - now requires WordPress Test Suite for all tests
+- Downgraded PHPUnit from 10.x to 9.6 to match WordPress Core compatibility
+- Updated `yoast/phpunit-polyfills` to ^1.1.0 for PHPUnit 9 compatibility
+- All tests now use `WP_UnitTestCase` with real WordPress functions instead of mocks
+- Updated `phpunit.xml` schema to PHPUnit 9.6 format
+- Added `WP_TESTS_DIR` environment variable configuration in `phpunit.xml`
+- Updated CI workflows to use native Ubuntu MySQL instead of `actions-setup-mysql`
+- Added PHP MySQL extensions (`mysql`, `pdo_mysql`) to CI environment
+- Added Subversion installation in CI for WordPress Test Suite setup
+
+### Added
+
+- **Integration Tests**: 8 new integration tests validating complete WordPress integration
+  - WordPress admin menu integration testing
+  - Dashboard rendering with multiple plugins
+  - Tabs navigation system testing
+  - Plugin callback execution validation
+  - WordPress capabilities checking
+  - Admin menu hook registration verification
+  - Plugin registration order preservation
+  - Dashboard card structure validation
+- **CI/CD**: MySQL service and WordPress Test Suite installation in GitHub Actions
+  - Automated WordPress Test Suite installation before tests
+  - MySQL 8.0 service for database-dependent tests
+- `scripts/install-wp-tests.sh` - WordPress Test Suite installation script (from SilverAssist standards)
+- `tests/Integration/SettingsHubIntegrationTest.php` - Complete integration test suite
+- `tests/TestCase.php` - Base test case extending `WP_UnitTestCase`
+
+### Removed
+
+- Brain Monkey (`brain/monkey`) dependency - no longer needed
+- Mockery (`mockery/mockery`) transitive dependency
+- `tests/BrainMonkeyTestTrait.php` - replaced by WordPress Test Suite
+- Conditional test infrastructure (Brain Monkey fallback removed)
+
+### Fixed
+
+- PHPStan configuration to properly handle `WP_UnitTestCase` inheritance
+- Test bootstrap to require WordPress Test Suite installation
+- All tests now work with real WordPress environment and database
+
+### Documentation
+
+- Updated README.md with WordPress Test Suite installation instructions
+- Updated CONTRIBUTING.md with dual-mode testing explanation (removed Brain Monkey references)
+- Added comprehensive test suite documentation showing unit vs integration tests
+- Clarified that WordPress Test Suite is required, not optional
+
+### Testing
+
+- **Total**: 18 tests (10 unit + 8 integration), 65 assertions
+- All tests use real WordPress functions via WordPress Test Suite
+- Tests validate actual WordPress admin menu integration
+- Tests use WordPress factories for creating test users
+- Tests verify real WordPress capabilities and hooks system
+
+### Technical Details
+
+- Tests now run against actual WordPress installation in `/tmp/wordpress`
+- WordPress Test Suite provides full WordPress environment with MySQL database
+- Each test runs in isolated transaction (automatic rollback)
+- Compatible with WordPress 6.5+ testing infrastructure
+- PHPUnit 9.6.29 matches WordPress Core test suite version
+
 ## [1.1.3] - 2025-10-11
 
 ### Changed

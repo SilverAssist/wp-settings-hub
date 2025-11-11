@@ -1,0 +1,56 @@
+name: CI
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  # Quality checks for PHP 8.2 (with coverage)
+  quality-checks-82:
+    name: Quality Checks (PHP 8.2)
+    uses: ./.github/workflows/quality-checks.yml
+    with:
+      php-version: '8.2'
+      upload-coverage: true
+  
+  # Quality checks for PHP 8.3
+  quality-checks-83:
+    name: Quality Checks (PHP 8.3)
+    uses: ./.github/workflows/quality-checks.yml
+    with:
+      php-version: '8.3'
+      upload-coverage: false
+  
+  # Quality checks for PHP 8.4
+  quality-checks-84:
+    name: Quality Checks (PHP 8.4)
+    uses: ./.github/workflows/quality-checks.yml
+    with:
+      php-version: '8.4'
+      upload-coverage: false
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        
+      - name: 🐘 Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl
+          coverage: none
+          
+      - name: 📦 Install Composer dependencies
+        run: composer install --no-interaction --no-progress --optimize-autoloader
+        
+      - name: 🔒 Security audit
+        run: composer audit

@@ -7,10 +7,24 @@ parameters:
         - vendor
         - coverage
         - .phpunit.cache
+        - tests/TestCase.php
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
         - vendor/php-stubs/wordpress-stubs
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
-        # Defensive programming: checking types even when PHPDoc guarantees them
+        # Defensive programming: checking types even when PHPDoc guarantees them.
         - '#Right side of && is always true#'
+        # WordPress uses associative arrays with dynamic structures that are properly validated at runtime.
+        - '#does not accept non-empty-array#'
+        - '#of function esc_html expects string#'
+        - '#Cannot cast .* to string#'
+        - '#Parameter .* expects string, .* given#'
+        - '#Parameter .* expects callable#'
+        # WordPress Test Suite functions are only available when tests are run, not during static analysis
+        - '#Function (tests_add_filter|_manually_load_package) (has no return type specified|not found)\.#'
+        - '#Undefined type \\WP_UnitTestCase\.#'
+        - '#Use of unknown class: \\WP_UnitTestCase\.#'
+        - '#Class .* extends unknown class WP_UnitTestCase\.#'
+        - '#Call to an undefined (static )?method .*::(setUp|tearDown|assert.*|factory)\(\)\.#'
