@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Updated `shivammathur/setup-php` action to use valid commit SHA `bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f` (version 2.35.5) across all workflows
+- Fixed workflow failures caused by invalid commit SHA `e6f75134d35483e1d4417d8b7c6f9dc60e40c0b5`
+
 ## [1.1.4] - 2025-11-10
 
 ### Changed
