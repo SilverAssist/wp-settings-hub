@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2026-01-02
+
 ### Fixed
 
+- Fixed admin menu icon visibility by using black fill colors in SVG instead of hardcoded colors (#00D1FF and white) that WordPress cannot style correctly
 - Updated `shivammathur/setup-php` action to use valid commit SHA `bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f` (version 2.35.5) across all workflows
 - Fixed workflow failures caused by invalid commit SHA `e6f75134d35483e1d4417d8b7c6f9dc60e40c0b5`
 
