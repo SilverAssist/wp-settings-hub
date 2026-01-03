@@ -119,6 +119,14 @@ composer test         # Run test suite
 composer qa           # Run all checks
 ```
 
+### GitHub CLI
+Always pipe `gh` commands through `cat` to avoid pager issues:
+```bash
+gh run view 123456789 --log-failed | cat
+gh pr list | cat
+gh issue list | cat
+```
+
 ### Making Changes
 - All code must pass PHPCS, PHPStan Level 8, and tests
 - Use WordPress-native UI components and classes
