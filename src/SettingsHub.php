@@ -90,6 +90,13 @@ final class SettingsHub {
 	private const CSS_HANDLE = 'silverassist-settings-hub';
 
 	/**
+	 * Package version for cache busting.
+	 *
+	 * @var string
+	 */
+	private const PACKAGE_VERSION = '1.2.0';
+
+	/**
 	 * Private constructor to enforce singleton pattern.
 	 */
 	private function __construct() {
@@ -129,6 +136,14 @@ final class SettingsHub {
 	 * }
 	 */
 	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
+		// Capture the first plugin_file for asset URL resolution.
+		if ( empty( $this->plugin_file ) && ! empty( $args['plugin_file'] ) ) {
+			$this->plugin_file = (string) $args['plugin_file'];
+		}
+
+		// Remove plugin_file from args to prevent it from being stored in plugin data.
+		unset( $args['plugin_file'] );
+
 		// Store plugin data.
 		$this->plugins[ $slug ] = array_merge(
 			array(
@@ -138,11 +153,6 @@ final class SettingsHub {
 			),
 			$args
 		);
-
-		// Capture the first plugin_file for asset URL resolution.
-		if ( empty( $this->plugin_file ) && ! empty( $args['plugin_file'] ) ) {
-			$this->plugin_file = (string) $args['plugin_file'];
-		}
 
 		// Hook into admin_menu to register menus.
 		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
@@ -209,7 +219,7 @@ final class SettingsHub {
 			self::CSS_HANDLE,
 			$css_url,
 			array(),
-			'1.2.0'
+			self::PACKAGE_VERSION
 		);
 	}
 
@@ -252,11 +262,24 @@ final class SettingsHub {
 			return '';
 		}
 
-		return str_replace(
+		$normalized_asset = wp_normalize_path( $asset_file );
+		$asset_url        = str_replace(
 			wp_normalize_path( ABSPATH ),
 			trailingslashit( site_url() ),
-			wp_normalize_path( $asset_file )
+			$normalized_asset
 		);
+
+		// If the replacement did not change the path, ABSPATH was not a prefix.
+		if ( $asset_url === $normalized_asset ) {
+			return '';
+		}
+
+		// Ensure we ended up with an HTTP(S) URL, not a filesystem path.
+		if ( ! preg_match( '#^https?://#', $asset_url ) ) {
+			return '';
+		}
+
+		return $asset_url;
 	}
 
 	/**

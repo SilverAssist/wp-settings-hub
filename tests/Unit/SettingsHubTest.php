@@ -327,4 +327,83 @@ final class SettingsHubTest extends TestCase {
 			'Tabs navigation should not have inline styles'
 		);
 	}
+
+	/**
+	 * Test enqueue_styles is called on Silver Assist pages.
+	 */
+	public function test_enqueue_styles_on_silver_assist_page(): void {
+		global $wp_styles;
+		$wp_styles = new \WP_Styles();
+
+		$hub = SettingsHub::get_instance();
+
+		// Register a plugin to trigger styles registration.
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			}
+		);
+
+		// Simulate being on a Silver Assist page.
+		$hub->enqueue_styles( 'toplevel_page_silver-assist' );
+
+		// Check that the style was enqueued.
+		$this->assertTrue(
+			wp_style_is( 'silverassist-settings-hub', 'enqueued' ),
+			'CSS should be enqueued on Silver Assist pages'
+		);
+	}
+
+	/**
+	 * Test enqueue_styles does not enqueue on non-Silver Assist pages.
+	 */
+	public function test_enqueue_styles_not_on_other_pages(): void {
+		global $wp_styles;
+		$wp_styles = new \WP_Styles();
+
+		$hub = SettingsHub::get_instance();
+
+		// Register a plugin to trigger styles registration.
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			}
+		);
+
+		// Simulate being on a non-Silver Assist page.
+		$hub->enqueue_styles( 'toplevel_page_dashboard' );
+
+		// Check that the style was NOT enqueued.
+		$this->assertFalse(
+			wp_style_is( 'silverassist-settings-hub', 'enqueued' ),
+			'CSS should not be enqueued on non-Silver Assist pages'
+		);
+	}
+
+	/**
+	 * Test plugin_file is not stored in plugin data.
+	 */
+	public function test_plugin_file_not_stored_in_plugins(): void {
+		$hub = SettingsHub::get_instance();
+
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			},
+			array(
+				'description' => 'Test description',
+				'version'     => '1.0.0',
+				'plugin_file' => '/path/to/plugin.php',
+			)
+		);
+
+		$plugins = $hub->get_plugins();
+		$this->assertArrayNotHasKey( 'plugin_file', $plugins['test-plugin'], 'plugin_file should not be stored in plugin data' );
+	}
 }
