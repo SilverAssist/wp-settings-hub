@@ -242,4 +242,226 @@ final class SettingsHubTest extends TestCase {
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringNotContainsString( 'nav-tab-wrapper', $output, 'Should not contain tabs navigation' );
 	}
+
+	/**
+	 * Test dashboard uses new CSS classes instead of inline styles.
+	 */
+	public function test_render_dashboard_uses_css_classes(): void {
+		$hub = SettingsHub::get_instance();
+
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			},
+			array(
+				'description' => 'Test description',
+				'version'     => '1.0.0',
+			)
+		);
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = ob_get_clean();
+
+		$this->assertNotFalse( $output, 'Output should not be false' );
+		$this->assertIsString( $output, 'Output should be a string' );
+		// Check for new CSS classes.
+		$this->assertStringContainsString( 'silverassist-dashboard-description', $output, 'Should use dashboard description class' );
+		$this->assertStringContainsString( 'silverassist-dashboard-grid', $output, 'Should use dashboard grid class' );
+		$this->assertStringContainsString( 'silverassist-plugin-card', $output, 'Should use plugin card class' );
+		$this->assertStringContainsString( 'card-header', $output, 'Should use card header class' );
+		$this->assertStringContainsString( 'card-content', $output, 'Should use card content class' );
+		$this->assertStringContainsString( 'silverassist-version-badge', $output, 'Should use version badge class' );
+		// Verify grid has no inline style attribute.
+		$this->assertDoesNotMatchRegularExpression(
+			'/<div[^>]*class="[^"]*silverassist-dashboard-grid[^"]*"[^>]*\sstyle=/i',
+			$output,
+			'Dashboard grid should not have inline styles'
+		);
+	}
+
+	/**
+	 * Test empty state uses new CSS class.
+	 */
+	public function test_render_dashboard_empty_state_uses_css_class(): void {
+		$hub = SettingsHub::get_instance();
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = ob_get_clean();
+
+		$this->assertNotFalse( $output, 'Output should not be false' );
+		$this->assertIsString( $output, 'Output should be a string' );
+		$this->assertStringContainsString( 'silverassist-empty-state', $output, 'Should use empty state class' );
+		$this->assertStringContainsString( 'dashicons-admin-plugins', $output, 'Should contain dashicon' );
+	}
+
+	/**
+	 * Test tabs navigation uses new CSS class.
+	 */
+	public function test_render_tabs_uses_css_class(): void {
+		$hub = SettingsHub::get_instance();
+		$hub->enable_tabs( true );
+
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			}
+		);
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = ob_get_clean();
+
+		$this->assertNotFalse( $output, 'Output should not be false' );
+		$this->assertIsString( $output, 'Output should be a string' );
+		$this->assertStringContainsString( 'silverassist-hub-tabs', $output, 'Should use hub tabs class' );
+		// Verify nav-tab-wrapper has no inline style attribute.
+		$this->assertDoesNotMatchRegularExpression(
+			'/<nav[^>]*class="[^"]*nav-tab-wrapper[^"]*"[^>]*\sstyle=/i',
+			$output,
+			'Tabs navigation should not have inline styles'
+		);
+	}
+
+	/**
+	 * Test enqueue_styles behavior on Silver Assist pages.
+	 *
+	 * This test verifies page-filtering logic by ensuring the method doesn't
+	 * return early for Silver Assist pages. Due to test environment limitations
+	 * (ABSPATH pointing to /tmp/wordpress/ while package is elsewhere), we verify
+	 * the method attempts to resolve the URL and doesn't skip based on page check.
+	 */
+	public function test_enqueue_styles_on_silver_assist_page(): void {
+		global $wp_styles;
+		$wp_styles = new \WP_Styles();
+
+		$hub = SettingsHub::get_instance();
+
+		// Create a temporary plugin structure under WP_PLUGIN_DIR so
+		// plugin_dir_url() can resolve it to a valid URL in CI environments.
+		$temp_plugin_dir = WP_PLUGIN_DIR . '/test-plugin-' . bin2hex( random_bytes( 8 ) );
+		$vendor_path     = $temp_plugin_dir . '/vendor/silverassist/wp-settings-hub/assets/css';
+		mkdir( $vendor_path, 0777, true );
+		copy(
+			dirname( __DIR__, 2 ) . '/assets/css/settings-hub.css',
+			$vendor_path . '/settings-hub.css'
+		);
+
+		$plugin_file = $temp_plugin_dir . '/test-plugin.php';
+		file_put_contents( $plugin_file, '<?php // Test plugin' );
+
+		// Register a plugin with plugin_file to enable URL resolution.
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			},
+			array( 'plugin_file' => $plugin_file )
+		);
+
+		// Simulate being on a Silver Assist page.
+		$hub->enqueue_styles( 'toplevel_page_silver-assist' );
+
+		// Check that the style was enqueued.
+		$is_enqueued = wp_style_is( 'silverassist-settings-hub', 'enqueued' );
+
+		// Cleanup: recursively remove temp directory.
+		$this->remove_directory_recursive( $temp_plugin_dir );
+
+		$this->assertTrue(
+			$is_enqueued,
+			'CSS should be enqueued on Silver Assist pages'
+		);
+	}
+
+	/**
+	 * Recursively remove a directory and its contents.
+	 *
+	 * @param string $dir Directory path to remove.
+	 */
+	private function remove_directory_recursive( string $dir ): void {
+		if ( ! is_dir( $dir ) ) {
+			return;
+		}
+
+		$entries = scandir( $dir );
+		if ( false === $entries ) {
+			return;
+		}
+
+		$files = array_diff( $entries, array( '.', '..' ) );
+		foreach ( $files as $file ) {
+			$path = $dir . '/' . $file;
+			is_dir( $path ) ? $this->remove_directory_recursive( $path ) : unlink( $path );
+		}
+		rmdir( $dir );
+	}
+
+	/**
+	 * Test enqueue_styles does not enqueue on non-Silver Assist pages.
+	 */
+	public function test_enqueue_styles_not_on_other_pages(): void {
+		global $wp_styles;
+		$wp_styles = new \WP_Styles();
+
+		$hub = SettingsHub::get_instance();
+
+		// Register a plugin to trigger styles registration.
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			}
+		);
+
+		// Simulate being on a non-Silver Assist page.
+		$hub->enqueue_styles( 'toplevel_page_dashboard' );
+
+		// Check that the style was NOT enqueued.
+		$this->assertFalse(
+			wp_style_is( 'silverassist-settings-hub', 'enqueued' ),
+			'CSS should not be enqueued on non-Silver Assist pages'
+		);
+	}
+
+	/**
+	 * Test plugin_file is not stored in plugin data.
+	 */
+	public function test_plugin_file_not_stored_in_plugins(): void {
+		$hub = SettingsHub::get_instance();
+
+		$plugin_file_path = '/path/to/plugin.php';
+
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			},
+			array(
+				'description' => 'Test description',
+				'version'     => '1.0.0',
+				'plugin_file' => $plugin_file_path,
+			)
+		);
+
+		// Verify plugin_file is not in public plugin data.
+		$plugins = $hub->get_plugins();
+		$this->assertArrayNotHasKey( 'plugin_file', $plugins['test-plugin'], 'plugin_file should not be stored in plugin data' );
+
+		// Verify plugin_file was captured internally by using reflection.
+		$reflection    = new \ReflectionClass( $hub );
+		$property      = $reflection->getProperty( 'plugin_file' );
+		$property->setAccessible( true );
+		$captured_file = $property->getValue( $hub );
+
+		$this->assertSame( $plugin_file_path, $captured_file, 'plugin_file should be captured internally for asset URL resolution' );
+	}
 }

@@ -313,8 +313,8 @@ class SettingsHubIntegrationTest extends TestCase {
 		$this->hub->render_dashboard();
 		$output = ob_get_clean();
 
-		// Verify card structure - WordPress uses .card class
-		$this->assertStringContainsString( 'class="card"', $output );
+		// Verify card structure uses silverassist-plugin-card class
+		$this->assertStringContainsString( 'silverassist-plugin-card', $output );
 		
 		// Verify plugin name and version are displayed
 		$this->assertStringContainsString( 'Card Test Plugin', $output );

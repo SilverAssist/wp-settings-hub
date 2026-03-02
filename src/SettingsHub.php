@@ -63,6 +63,40 @@ final class SettingsHub {
 	private bool $render_tabs = true;
 
 	/**
+	 * Whether the styles hook has been registered.
+	 *
+	 * @var bool
+	 */
+	private bool $styles_registered = false;
+
+	/**
+	 * Plugin file path used to resolve asset URLs.
+	 *
+	 * Stored from the first plugin that registers with the hub.
+	 * Used to derive the vendor directory URL, avoiding the __DIR__ bug
+	 * when PHP autoloader loads the class from a single vendor directory.
+	 *
+	 * @see https://github.com/SilverAssist/wp-github-updater/issues/17
+	 *
+	 * @var string
+	 */
+	private string $plugin_file = '';
+
+	/**
+	 * CSS handle for deduplication across plugins.
+	 *
+	 * @var string
+	 */
+	private const CSS_HANDLE = 'silverassist-settings-hub';
+
+	/**
+	 * Package version for cache busting.
+	 *
+	 * @var string
+	 */
+	private const PACKAGE_VERSION = '1.2.0';
+
+	/**
 	 * Private constructor to enforce singleton pattern.
 	 */
 	private function __construct() {
@@ -94,13 +128,22 @@ final class SettingsHub {
 	 * @param array<string, string|array<array<string, string|callable>>> $args {
 	 *     Optional arguments for the plugin.
 	 *
-	 *     @type string   $description Plugin description.
-	 *     @type string   $version     Plugin version number.
-	 *     @type string   $tab_title   Custom tab title (defaults to plugin name).
-	 *     @type array[]  $actions     Array of action buttons with label, url/callback, and class.
+	 *     @type string   $description  Plugin description.
+	 *     @type string   $version      Plugin version number.
+	 *     @type string   $tab_title    Custom tab title (defaults to plugin name).
+	 *     @type string   $plugin_file  Absolute path to the plugin's main file (for asset URL resolution).
+	 *     @type array[]  $actions      Array of action buttons with label, url/callback, and class.
 	 * }
 	 */
 	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
+		// Capture the first plugin_file for asset URL resolution.
+		if ( empty( $this->plugin_file ) && ! empty( $args['plugin_file'] ) ) {
+			$this->plugin_file = (string) $args['plugin_file'];
+		}
+
+		// Remove plugin_file from args to prevent it from being stored in plugin data.
+		unset( $args['plugin_file'] );
+
 		// Store plugin data.
 		$this->plugins[ $slug ] = array_merge(
 			array(
@@ -113,6 +156,12 @@ final class SettingsHub {
 
 		// Hook into admin_menu to register menus.
 		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
+
+		// Register styles hook once (handle deduplication is done by WordPress).
+		if ( ! $this->styles_registered ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_styles' ) );
+			$this->styles_registered = true;
+		}
 	}
 
 	/**
@@ -141,6 +190,96 @@ final class SettingsHub {
 
 		// Register submenus for all plugins.
 		$this->register_submenus();
+	}
+
+	/**
+	 * Enqueue dashboard styles on Silver Assist pages.
+	 *
+	 * Uses a unique handle so WordPress deduplicates the enqueue
+	 * regardless of how many plugins include this package.
+	 *
+	 * @param string $hook_suffix The current admin page hook suffix.
+	 *
+	 * @internal
+	 */
+	public function enqueue_styles( string $hook_suffix ): void {
+		// Only load on Silver Assist pages (top-level and submenu pages).
+		if ( 'toplevel_page_' . self::PARENT_SLUG !== $hook_suffix
+			&& strpos( $hook_suffix, self::PARENT_SLUG ) === false ) {
+			return;
+		}
+
+		$css_url = $this->get_package_asset_url( 'assets/css/settings-hub.css' );
+
+		if ( empty( $css_url ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			self::CSS_HANDLE,
+			$css_url,
+			array(),
+			self::PACKAGE_VERSION
+		);
+	}
+
+	/**
+	 * Get the URL to a package asset file.
+	 *
+	 * Resolves the URL to assets within the vendor/silverassist/wp-settings-hub directory.
+	 * Uses plugin_file (provided via register_plugin) to derive the correct vendor path,
+	 * replicating the pattern from wp-github-updater's getPackageAssetUrl().
+	 *
+	 * @param string $asset_path Relative path to asset (e.g., 'assets/css/settings-hub.css').
+	 * @return string Full URL to the asset file, or empty string if unresolvable.
+	 *
+	 * @since 1.2.0
+	 * @see   \SilverAssist\GitHubUpdater\Updater::getPackageAssetUrl()
+	 */
+	private function get_package_asset_url( string $asset_path ): string {
+		// Primary: derive from plugin_file (avoids __DIR__ autoloader bug).
+		if ( ! empty( $this->plugin_file ) ) {
+			$plugin_dir = wp_normalize_path( dirname( $this->plugin_file ) );
+			$base_url   = rtrim( plugin_dir_url( $this->plugin_file ), '/' );
+
+			// Standard Composer vendor path for this package.
+			$vendor_relative = 'vendor/silverassist/wp-settings-hub';
+			$full_path       = $plugin_dir . '/' . $vendor_relative;
+
+			if ( is_dir( $full_path ) ) {
+				$asset_file = $full_path . '/' . ltrim( $asset_path, '/' );
+				if ( file_exists( $asset_file ) ) {
+					return $base_url . '/' . $vendor_relative . '/' . ltrim( $asset_path, '/' );
+				}
+			}
+		}
+
+		// Fallback: resolve from __DIR__ (single-plugin / non-autoloaded scenario).
+		$package_dir = wp_normalize_path( dirname( __DIR__ ) );
+		$asset_file  = $package_dir . '/' . ltrim( $asset_path, '/' );
+
+		if ( ! file_exists( $asset_file ) ) {
+			return '';
+		}
+
+		$normalized_asset = wp_normalize_path( $asset_file );
+		$url_candidate    = str_replace(
+			wp_normalize_path( ABSPATH ),
+			trailingslashit( site_url() ),
+			$normalized_asset
+		);
+
+		// If the replacement did not change the path, ABSPATH was not a prefix.
+		if ( $url_candidate === $normalized_asset ) {
+			return '';
+		}
+
+		// Ensure we ended up with an HTTP(S) URL, not a filesystem path.
+		if ( ! preg_match( '#^https?://#', $url_candidate ) ) {
+			return '';
+		}
+
+		return $url_candidate;
 	}
 
 	/**
@@ -204,18 +343,19 @@ final class SettingsHub {
 				<?php $this->render_tabs_navigation( '' ); ?>
 			<?php endif; ?>
 
-			<p class="description">
+			<p class="silverassist-dashboard-description">
 				<?php esc_html_e( 'Welcome to Silver Assist! Below are all your installed Silver Assist plugins.', 'silverassist-settings-hub' ); ?>
 			</p>
 
 			<?php if ( empty( $this->plugins ) ) : ?>
-				<div class="notice notice-info">
+				<div class="silverassist-empty-state">
+					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
 					<p>
 						<?php esc_html_e( 'No Silver Assist plugins have been registered yet.', 'silverassist-settings-hub' ); ?>
 					</p>
 				</div>
 			<?php else : ?>
-				<div class="silverassist-dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+				<div class="silverassist-dashboard-grid">
 					<?php foreach ( $this->plugins as $plugin ) : ?>
 						<?php $this->render_plugin_card( $plugin ); ?>
 					<?php endforeach; ?>
@@ -247,45 +387,51 @@ final class SettingsHub {
 		$description  = $plugin['description'] ?? '';
 		$version      = $plugin['version'] ?? '';
 		?>
-		<div class="card" style="padding: 20px;">
-			<h2 style="margin: 0 0 10px 0; font-size: 16px;">
-				<?php echo esc_html( $name ); ?>
+		<div class="silverassist-plugin-card">
+			<div class="card-header">
+				<h2>
+					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
+					<?php echo esc_html( $name ); ?>
+				</h2>
 				<?php if ( ! empty( $version ) ) : ?>
-					<span style="font-size: 12px; color: #666; font-weight: normal;">
+					<span class="silverassist-version-badge">
 						v<?php echo esc_html( (string) $version ); ?>
 					</span>
 				<?php endif; ?>
-			</h2>
+			</div>
 
-			<?php if ( ! empty( $description ) ) : ?>
-				<p style="margin: 0 0 15px 0; color: #666;">
-					<?php echo esc_html( (string) $description ); ?>
-				</p>
-			<?php endif; ?>
+			<div class="card-content">
+				<?php if ( ! empty( $description ) ) : ?>
+					<p class="card-description">
+						<?php echo esc_html( (string) $description ); ?>
+					</p>
+				<?php endif; ?>
 
-			<div class="plugin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-				<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary">
-					<?php esc_html_e( 'Configure', 'silverassist-settings-hub' ); ?>
-			</a>
+				<div class="plugin-actions">
+					<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary">
+						<?php esc_html_e( 'Configure', 'silverassist-settings-hub' ); ?>
+					</a>
 
-			<?php
-			// Render additional actions from plugins.
-			if ( isset( $plugin['actions'] ) && is_array( $plugin['actions'] ) && count( $plugin['actions'] ) > 0 ) {
-				foreach ( $plugin['actions'] as $action ) {
-					$this->render_action_button( $action, $plugin['slug'] );
-				}
-			}               /**
-				 * Fires after the default Configure button in a plugin card.
-				 *
-				 * Allows plugins to add custom action buttons to their dashboard card.
-				 *
-				 * @since 1.1.0
-				 *
-				 * @param string $slug   The plugin slug.
-				 * @param array  $plugin The plugin data array.
-				 */
-				do_action( 'silverassist_settings_hub_plugin_actions', $plugin['slug'], $plugin );
-			?>
+					<?php
+					// Render additional actions from plugins.
+					if ( isset( $plugin['actions'] ) && is_array( $plugin['actions'] ) && count( $plugin['actions'] ) > 0 ) {
+						foreach ( $plugin['actions'] as $action ) {
+							$this->render_action_button( $action, $plugin['slug'] );
+						}
+					}
+					/**
+					 * Fires after the default Configure button in a plugin card.
+					 *
+					 * Allows plugins to add custom action buttons to their dashboard card.
+					 *
+					 * @since 1.1.0
+					 *
+					 * @param string $slug   The plugin slug.
+					 * @param array  $plugin The plugin data array.
+					 */
+					do_action( 'silverassist_settings_hub_plugin_actions', $plugin['slug'], $plugin );
+					?>
+				</div>
 			</div>
 		</div>
 		<?php
@@ -377,7 +523,7 @@ final class SettingsHub {
 		$dashboard_url       = admin_url( 'admin.php?page=' . self::PARENT_SLUG );
 		$is_dashboard_active = empty( $active_slug );
 		?>
-		<nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
+		<nav class="nav-tab-wrapper silverassist-hub-tabs">
 			<a href="<?php echo esc_url( $dashboard_url ); ?>" class="nav-tab <?php echo $is_dashboard_active ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'Dashboard', 'silverassist-settings-hub' ); ?>
 			</a>

@@ -70,6 +70,7 @@ jobs:
           mkdir -p dist
           zip -r dist/silverassist-wp-settings-hub-${{ steps.get_version.outputs.VERSION }}.zip \
             src/ \
+            assets/ \
             vendor/ \
             composer.json \
             LICENSE.md \

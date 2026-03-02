@@ -1,0 +1,302 @@
+/**
+ * Settings Hub - Dashboard Styles
+ *
+ * Card-based design for the Silver Assist Settings Hub dashboard.
+ * This CSS is registered with a unique handle so WordPress deduplicates
+ * the enqueue regardless of how many plugins include the package.
+ *
+ * @package SilverAssist\SettingsHub
+ * @since 1.2.0
+ * @author Silver Assist
+ */
+
+/* ==========================================================================
+	1.0 - CSS Custom Properties
+	========================================================================== */
+
+:root {
+	/* Colors - Primary */
+	--silver-hub-color-primary: #0073aa;
+	--silver-hub-color-primary-dark: #005177;
+	--silver-hub-color-primary-light: #e8f4f8;
+
+	/* Colors - Semantic */
+	--silver-hub-color-success: #28a745;
+	--silver-hub-color-warning: #ffc107;
+	--silver-hub-color-danger: #dc3545;
+
+	/* Colors - Neutral */
+	--silver-hub-color-white: #fff;
+	--silver-hub-color-gray-100: #f8f9fa;
+	--silver-hub-color-gray-200: #e9ecef;
+	--silver-hub-color-gray-300: #e5e5e5;
+	--silver-hub-color-gray-600: #666;
+	--silver-hub-color-gray-800: #333;
+
+	/* Colors - Status */
+	--silver-hub-success-bg: #d4edda;
+	--silver-hub-success-text: #155724;
+	--silver-hub-success-border: #c3e6cb;
+
+	/* Colors - Background */
+	--silver-hub-bg-primary: #ffffff;
+	--silver-hub-bg-secondary: #f0f0f1;
+
+	/* Spacing */
+	--silver-hub-spacing-xs: 2px;
+	--silver-hub-spacing-sm: 4px;
+	--silver-hub-spacing-md: 8px;
+	--silver-hub-spacing-lg: 12px;
+	--silver-hub-spacing-xl: 16px;
+	--silver-hub-spacing-2xl: 20px;
+	--silver-hub-spacing-3xl: 24px;
+
+	/* Typography */
+	--silver-hub-font-size-xs: 11px;
+	--silver-hub-font-size-sm: 12px;
+	--silver-hub-font-size-base: 13px;
+	--silver-hub-font-size-md: 14px;
+	--silver-hub-font-size-lg: 16px;
+	--silver-hub-font-size-xl: 18px;
+	--silver-hub-font-weight-normal: 400;
+	--silver-hub-font-weight-medium: 500;
+	--silver-hub-font-weight-semibold: 600;
+
+	/* Borders & Radius */
+	--silver-hub-border-color: #e5e5e5;
+	--silver-hub-border-color-light: #f0f0f0;
+	--silver-hub-radius-md: 8px;
+	--silver-hub-radius-lg: 12px;
+	--silver-hub-radius-pill: 50px;
+
+	/* Shadows */
+	--silver-hub-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+	--silver-hub-shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+	/* Transitions */
+	--silver-hub-transition-fast: 0.2s ease;
+
+	/* Fluid spacing */
+	--silver-hub-fluid-spacing: clamp(16px, 3vw, 24px);
+}
+
+/* ==========================================================================
+	2.0 - Dashboard Description
+	========================================================================== */
+
+.silverassist-dashboard-description {
+	font-size: var(--silver-hub-font-size-md);
+	color: var(--silver-hub-color-gray-600);
+	margin-block-end: var(--silver-hub-spacing-2xl);
+}
+
+/* ==========================================================================
+	3.0 - Dashboard Grid
+	========================================================================== */
+
+.silverassist-dashboard-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: var(--silver-hub-spacing-2xl);
+	margin-block-start: var(--silver-hub-spacing-2xl);
+	container-type: inline-size;
+}
+
+/* ==========================================================================
+	4.0 - Plugin Cards
+	========================================================================== */
+
+.silverassist-plugin-card {
+	background: var(--silver-hub-bg-primary);
+	border: 1px solid var(--silver-hub-border-color);
+	border-radius: var(--silver-hub-radius-lg);
+	padding: var(--silver-hub-fluid-spacing);
+	box-shadow: var(--silver-hub-shadow-card);
+	transition: box-shadow var(--silver-hub-transition-fast),
+				transform var(--silver-hub-transition-fast);
+	display: flex;
+	flex-direction: column;
+}
+
+.silverassist-plugin-card:hover {
+	box-shadow: var(--silver-hub-shadow-card-hover);
+	transform: translateY(-2px);
+}
+
+/* --------------------------------------------------------------------------
+	4.1 - Card Header
+	-------------------------------------------------------------------------- */
+
+.silverassist-plugin-card .card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--silver-hub-spacing-md);
+	margin-block-end: var(--silver-hub-spacing-lg);
+	padding-block-end: var(--silver-hub-spacing-md);
+	border-block-end: 1px solid var(--silver-hub-border-color-light);
+}
+
+.silverassist-plugin-card .card-header h2 {
+	margin: 0;
+	font-size: var(--silver-hub-font-size-lg);
+	font-weight: var(--silver-hub-font-weight-semibold);
+	line-height: 1.4;
+	flex: 1;
+	color: var(--silver-hub-color-gray-800);
+}
+
+.silverassist-plugin-card .card-header .dashicons {
+	color: var(--silver-hub-color-primary);
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* --------------------------------------------------------------------------
+	4.2 - Version Badge
+	-------------------------------------------------------------------------- */
+
+.silverassist-version-badge {
+	display: inline-block;
+	padding: var(--silver-hub-spacing-xs) var(--silver-hub-spacing-md);
+	background: var(--silver-hub-success-bg);
+	color: var(--silver-hub-success-text);
+	border: 1px solid var(--silver-hub-success-border);
+	border-radius: var(--silver-hub-radius-pill);
+	font-size: var(--silver-hub-font-size-xs);
+	font-weight: var(--silver-hub-font-weight-semibold);
+	letter-spacing: 0.3px;
+	white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+	4.3 - Card Content
+	-------------------------------------------------------------------------- */
+
+.silverassist-plugin-card .card-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--silver-hub-spacing-md);
+	flex: 1;
+}
+
+.silverassist-plugin-card .card-description {
+	margin: 0;
+	color: var(--silver-hub-color-gray-600);
+	font-size: var(--silver-hub-font-size-base);
+	line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+	4.4 - Card Actions
+	-------------------------------------------------------------------------- */
+
+.silverassist-plugin-card .plugin-actions {
+	display: flex;
+	gap: var(--silver-hub-spacing-md);
+	flex-wrap: wrap;
+	margin-block-start: auto;
+	padding-block-start: var(--silver-hub-spacing-xl);
+}
+
+.silverassist-plugin-card .plugin-actions .button {
+	border-radius: var(--silver-hub-radius-md);
+	font-weight: var(--silver-hub-font-weight-medium);
+	transition: all var(--silver-hub-transition-fast);
+}
+
+.silverassist-plugin-card .plugin-actions .button-primary {
+	background: var(--silver-hub-color-primary);
+	border-color: var(--silver-hub-color-primary-dark);
+}
+
+.silverassist-plugin-card .plugin-actions .button-primary:hover {
+	background: var(--silver-hub-color-primary-dark);
+}
+
+/* ==========================================================================
+	5.0 - Tabs Navigation Enhancement
+	========================================================================== */
+
+.silverassist-hub-tabs.nav-tab-wrapper {
+	margin-block-end: var(--silver-hub-spacing-2xl);
+	border-block-end-color: var(--silver-hub-border-color);
+}
+
+.silverassist-hub-tabs .nav-tab {
+	border-radius: var(--silver-hub-radius-md) var(--silver-hub-radius-md) 0 0;
+	padding: var(--silver-hub-spacing-md) var(--silver-hub-spacing-xl);
+	font-weight: var(--silver-hub-font-weight-medium);
+	transition: background var(--silver-hub-transition-fast),
+				color var(--silver-hub-transition-fast);
+}
+
+.silverassist-hub-tabs .nav-tab:hover:not(.nav-tab-active) {
+	background: var(--silver-hub-color-gray-100);
+}
+
+.silverassist-hub-tabs .nav-tab-active {
+	border-block-end-color: var(--silver-hub-bg-primary);
+	font-weight: var(--silver-hub-font-weight-semibold);
+}
+
+/* ==========================================================================
+	6.0 - Empty State
+	========================================================================== */
+
+.silverassist-empty-state {
+	text-align: center;
+	padding: var(--silver-hub-spacing-3xl);
+	background: var(--silver-hub-bg-primary);
+	border: 1px dashed var(--silver-hub-border-color);
+	border-radius: var(--silver-hub-radius-lg);
+	margin-block-start: var(--silver-hub-spacing-2xl);
+}
+
+.silverassist-empty-state .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: var(--silver-hub-color-gray-200);
+	margin-block-end: var(--silver-hub-spacing-lg);
+}
+
+.silverassist-empty-state p {
+	color: var(--silver-hub-color-gray-600);
+	font-size: var(--silver-hub-font-size-md);
+	margin: 0;
+}
+
+/* ==========================================================================
+	7.0 - Responsive
+	========================================================================== */
+
+/*
+ * Container Queries
+ *
+ * Browser support: Chrome 105+, Safari 16+, Firefox 110+
+ * Graceful degradation: Falls back to media queries below for older browsers.
+ * These browsers are now widely adopted and considered standard.
+ */
+@container (max-width: 640px) {
+	.silverassist-dashboard-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 782px) {
+	.silverassist-dashboard-grid {
+		grid-template-columns: 1fr;
+		gap: var(--silver-hub-spacing-xl);
+	}
+
+	.silverassist-plugin-card .plugin-actions {
+		flex-direction: column;
+	}
+
+	.silverassist-plugin-card .plugin-actions .button {
+		width: 100%;
+		text-align: center;
+	}
+}

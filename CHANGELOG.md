@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-02
+
+### Added
+
+- External CSS stylesheet (`assets/css/settings-hub.css`) replacing all inline styles
+- `get_package_asset_url()` method for reliable asset URL resolution across multi-plugin setups
+- `plugin_file` parameter in `register_plugin()` for correct vendor path resolution
+- CSS custom properties for consistent theming across dashboard components
+- Card-based dashboard layout with hover effects and responsive grid
+- Empty state styling with centered icon and message
+- Unit tests for CSS class usage and absence of inline styles
+
+### Changed
+
+- Dashboard renders using CSS classes instead of inline `style` attributes
+- Plugin cards now use `dashicons-admin-plugins` icon inside `<h2>` for proper alignment
+- Style enqueuing uses WordPress `wp_enqueue_style()` with fixed handle for automatic deduplication
+- Asset URL resolution prioritises `plugin_file` path over `__DIR__` to avoid autoloader bug ([#17](https://github.com/SilverAssist/wp-github-updater/issues/17))
+
+### Fixed
+
+- Styles now load correctly when multiple Silver Assist plugins share the same Composer vendor directory
+- PHPStan configuration updated to ignore `ABSPATH` runtime constant
+
 ## [1.1.5] - 2026-01-02
 
 ### Fixed

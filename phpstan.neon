@@ -22,6 +22,8 @@ parameters:
         - '#Cannot cast .* to string#'
         - '#Parameter .* expects string, .* given#'
         - '#Parameter .* expects callable#'
+        # WordPress core constants defined at runtime (not available in stubs).
+        - '#Constant (ABSPATH|WP_PLUGIN_DIR) not found#'
         # WordPress Test Suite functions are only available when tests are run, not during static analysis
         - '#Function (tests_add_filter|_manually_load_package) (has no return type specified|not found)\.#'
         - '#Undefined type \\WP_UnitTestCase\.#'

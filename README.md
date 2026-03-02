@@ -72,10 +72,13 @@ $hub->register_plugin(
     [
         'description' => 'Description of my plugin',
         'version'     => '1.0.0',
-        'tab_title'   => 'My Plugin', // Optional: custom tab title
+        'tab_title'   => 'My Plugin',  // Optional: custom tab title
+        'plugin_file' => __FILE__,     // Optional but recommended: path to main plugin file
     ]
 );
 ```
+
+**Note:** The `plugin_file` parameter is optional but recommended when multiple plugins use this package. It ensures CSS assets load correctly by resolving the vendor directory URL from your plugin's location.
 
 ### 2. Render Your Settings Page
 
@@ -321,6 +324,7 @@ Register a plugin with the settings hub.
   - `description` (string): Short description shown on dashboard card
   - `version` (string): Plugin version number
   - `tab_title` (string): Custom title for tab (defaults to `$name`)
+  - `plugin_file` (string): Absolute path to the plugin's main file (recommended for multi-plugin setups)
   - `actions` (array): Custom action buttons for the dashboard card
 
 **Action Button Structure**:
