@@ -342,8 +342,9 @@ final class SettingsHubTest extends TestCase {
 
 		$hub = SettingsHub::get_instance();
 
-		// Create a temporary plugin structure to allow URL resolution to succeed.
-		$temp_plugin_dir = sys_get_temp_dir() . '/test-plugin-' . bin2hex( random_bytes( 8 ) );
+		// Create a temporary plugin structure under WP_PLUGIN_DIR so
+		// plugin_dir_url() can resolve it to a valid URL in CI environments.
+		$temp_plugin_dir = WP_PLUGIN_DIR . '/test-plugin-' . bin2hex( random_bytes( 8 ) );
 		$vendor_path     = $temp_plugin_dir . '/vendor/silverassist/wp-settings-hub/assets/css';
 		mkdir( $vendor_path, 0777, true );
 		copy(
