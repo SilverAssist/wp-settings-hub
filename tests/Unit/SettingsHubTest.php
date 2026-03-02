@@ -329,7 +329,12 @@ final class SettingsHubTest extends TestCase {
 	}
 
 	/**
-	 * Test enqueue_styles is called on Silver Assist pages.
+	 * Test enqueue_styles behavior on Silver Assist pages.
+	 *
+	 * This test verifies page-filtering logic by ensuring the method doesn't
+	 * return early for Silver Assist pages. Due to test environment limitations
+	 * (ABSPATH pointing to /tmp/wordpress/ while package is elsewhere), we verify
+	 * the method attempts to resolve the URL and doesn't skip based on page check.
 	 */
 	public function test_enqueue_styles_on_silver_assist_page(): void {
 		global $wp_styles;
@@ -337,21 +342,45 @@ final class SettingsHubTest extends TestCase {
 
 		$hub = SettingsHub::get_instance();
 
-		// Register a plugin to trigger styles registration.
+		// Create a temporary plugin structure to allow URL resolution to succeed.
+		$temp_plugin_dir = sys_get_temp_dir() . '/test-plugin-' . uniqid();
+		$vendor_path     = $temp_plugin_dir . '/vendor/silverassist/wp-settings-hub/assets/css';
+		mkdir( $vendor_path, 0777, true );
+		copy(
+			dirname( __DIR__, 2 ) . '/assets/css/settings-hub.css',
+			$vendor_path . '/settings-hub.css'
+		);
+
+		$plugin_file = $temp_plugin_dir . '/test-plugin.php';
+		file_put_contents( $plugin_file, '<?php // Test plugin' );
+
+		// Register a plugin with plugin_file to enable URL resolution.
 		$hub->register_plugin(
 			'test-plugin',
 			'Test Plugin',
 			static function (): void {
 				echo 'Settings';
-			}
+			},
+			array( 'plugin_file' => $plugin_file )
 		);
 
 		// Simulate being on a Silver Assist page.
 		$hub->enqueue_styles( 'toplevel_page_silver-assist' );
 
 		// Check that the style was enqueued.
+		$is_enqueued = wp_style_is( 'silverassist-settings-hub', 'enqueued' );
+
+		// Cleanup.
+		array_map( 'unlink', glob( $vendor_path . '/*' ) );
+		rmdir( $vendor_path );
+		rmdir( dirname( $vendor_path ) );
+		rmdir( dirname( dirname( $vendor_path ) ) );
+		rmdir( dirname( dirname( dirname( $vendor_path ) ) ) );
+		unlink( $plugin_file );
+		rmdir( $temp_plugin_dir );
+
 		$this->assertTrue(
-			wp_style_is( 'silverassist-settings-hub', 'enqueued' ),
+			$is_enqueued,
 			'CSS should be enqueued on Silver Assist pages'
 		);
 	}
@@ -410,10 +439,10 @@ final class SettingsHubTest extends TestCase {
 		$this->assertArrayNotHasKey( 'plugin_file', $plugins['test-plugin'], 'plugin_file should not be stored in plugin data' );
 
 		// Verify plugin_file was captured internally by using reflection.
-		$reflection      = new \ReflectionClass( $hub );
-		$property        = $reflection->getProperty( 'plugin_file' );
+		$reflection    = new \ReflectionClass( $hub );
+		$property      = $reflection->getProperty( 'plugin_file' );
 		$property->setAccessible( true );
-		$captured_file   = $property->getValue( $hub );
+		$captured_file = $property->getValue( $hub );
 
 		$this->assertSame( $plugin_file_path, $captured_file, 'plugin_file should be captured internally for asset URL resolution' );
 	}
