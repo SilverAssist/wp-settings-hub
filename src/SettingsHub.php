@@ -42,6 +42,20 @@ final class SettingsHub {
 	private array $plugins = array();
 
 	/**
+	 * CSS handle for WordPress style deduplication.
+	 *
+	 * @var string
+	 */
+	private const CSS_HANDLE = 'silverassist-settings-hub';
+
+	/**
+	 * Whether styles have been registered.
+	 *
+	 * @var bool
+	 */
+	private bool $styles_registered = false;
+
+	/**
 	 * Parent menu slug.
 	 *
 	 * @var string
@@ -113,6 +127,12 @@ final class SettingsHub {
 
 		// Hook into admin_menu to register menus.
 		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
+
+		// Register styles hook once.
+		if ( ! $this->styles_registered ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_styles' ) );
+			$this->styles_registered = true;
+		}
 	}
 
 	/**
@@ -141,6 +161,36 @@ final class SettingsHub {
 
 		// Register submenus for all plugins.
 		$this->register_submenus();
+	}
+
+	/**
+	 * Enqueue dashboard styles on Silver Assist admin pages.
+	 *
+	 * Registers and enqueues the external CSS file using a fixed handle
+	 * for WordPress automatic deduplication across multiple plugin instances.
+	 *
+	 * @param string $hook_suffix Current admin page hook suffix.
+	 *
+	 * @internal
+	 */
+	public function enqueue_styles( string $hook_suffix ): void {
+		// Only enqueue on Silver Assist pages.
+		if ( ! str_starts_with( $hook_suffix, 'toplevel_page_' . self::PARENT_SLUG ) && ! str_contains( $hook_suffix, self::PARENT_SLUG ) ) {
+			return;
+		}
+
+		// Resolve CSS file path.
+		$css_path = dirname( __DIR__ ) . '/assets/css/settings-hub.css';
+
+		// Convert filesystem path to URL.
+		$css_url = str_replace(
+			wp_normalize_path( ABSPATH ),
+			site_url( '/' ),
+			wp_normalize_path( $css_path )
+		);
+
+		// Register and enqueue with fixed handle for deduplication.
+		wp_enqueue_style( self::CSS_HANDLE, $css_url, array(), '1.2.0', 'all' );
 	}
 
 	/**
@@ -204,18 +254,19 @@ final class SettingsHub {
 				<?php $this->render_tabs_navigation( '' ); ?>
 			<?php endif; ?>
 
-			<p class="description">
+			<p class="silverassist-dashboard-description">
 				<?php esc_html_e( 'Welcome to Silver Assist! Below are all your installed Silver Assist plugins.', 'silverassist-settings-hub' ); ?>
 			</p>
 
 			<?php if ( empty( $this->plugins ) ) : ?>
-				<div class="notice notice-info">
+				<div class="silverassist-empty-state">
+					<span class="dashicons dashicons-admin-plugins"></span>
 					<p>
 						<?php esc_html_e( 'No Silver Assist plugins have been registered yet.', 'silverassist-settings-hub' ); ?>
 					</p>
 				</div>
 			<?php else : ?>
-				<div class="silverassist-dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+				<div class="silverassist-dashboard-grid">
 					<?php foreach ( $this->plugins as $plugin ) : ?>
 						<?php $this->render_plugin_card( $plugin ); ?>
 					<?php endforeach; ?>
@@ -247,45 +298,49 @@ final class SettingsHub {
 		$description  = $plugin['description'] ?? '';
 		$version      = $plugin['version'] ?? '';
 		?>
-		<div class="card" style="padding: 20px;">
-			<h2 style="margin: 0 0 10px 0; font-size: 16px;">
-				<?php echo esc_html( $name ); ?>
+		<div class="silverassist-plugin-card">
+			<div class="card-header">
+				<h2><?php echo esc_html( $name ); ?></h2>
+				<span class="dashicons dashicons-admin-settings"></span>
 				<?php if ( ! empty( $version ) ) : ?>
-					<span style="font-size: 12px; color: #666; font-weight: normal;">
+					<span class="silverassist-version-badge">
 						v<?php echo esc_html( (string) $version ); ?>
 					</span>
 				<?php endif; ?>
-			</h2>
+			</div>
 
-			<?php if ( ! empty( $description ) ) : ?>
-				<p style="margin: 0 0 15px 0; color: #666;">
-					<?php echo esc_html( (string) $description ); ?>
-				</p>
-			<?php endif; ?>
+			<div class="card-content">
+				<?php if ( ! empty( $description ) ) : ?>
+					<p class="card-description">
+						<?php echo esc_html( (string) $description ); ?>
+					</p>
+				<?php endif; ?>
 
-			<div class="plugin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-				<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary">
-					<?php esc_html_e( 'Configure', 'silverassist-settings-hub' ); ?>
-			</a>
+				<div class="plugin-actions">
+					<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary">
+						<?php esc_html_e( 'Configure', 'silverassist-settings-hub' ); ?>
+					</a>
 
-			<?php
-			// Render additional actions from plugins.
-			if ( isset( $plugin['actions'] ) && is_array( $plugin['actions'] ) && count( $plugin['actions'] ) > 0 ) {
-				foreach ( $plugin['actions'] as $action ) {
-					$this->render_action_button( $action, $plugin['slug'] );
-				}
-			}               /**
-				 * Fires after the default Configure button in a plugin card.
-				 *
-				 * Allows plugins to add custom action buttons to their dashboard card.
-				 *
-				 * @since 1.1.0
-				 *
-				 * @param string $slug   The plugin slug.
-				 * @param array  $plugin The plugin data array.
-				 */
-				do_action( 'silverassist_settings_hub_plugin_actions', $plugin['slug'], $plugin );
-			?>
+					<?php
+					// Render additional actions from plugins.
+					if ( isset( $plugin['actions'] ) && is_array( $plugin['actions'] ) && count( $plugin['actions'] ) > 0 ) {
+						foreach ( $plugin['actions'] as $action ) {
+							$this->render_action_button( $action, $plugin['slug'] );
+						}
+					}
+					/**
+					 * Fires after the default Configure button in a plugin card.
+					 *
+					 * Allows plugins to add custom action buttons to their dashboard card.
+					 *
+					 * @since 1.1.0
+					 *
+					 * @param string $slug   The plugin slug.
+					 * @param array  $plugin The plugin data array.
+					 */
+					do_action( 'silverassist_settings_hub_plugin_actions', $plugin['slug'], $plugin );
+					?>
+				</div>
 			</div>
 		</div>
 		<?php
@@ -377,7 +432,7 @@ final class SettingsHub {
 		$dashboard_url       = admin_url( 'admin.php?page=' . self::PARENT_SLUG );
 		$is_dashboard_active = empty( $active_slug );
 		?>
-		<nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
+		<nav class="nav-tab-wrapper silverassist-hub-tabs">
 			<a href="<?php echo esc_url( $dashboard_url ); ?>" class="nav-tab <?php echo $is_dashboard_active ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'Dashboard', 'silverassist-settings-hub' ); ?>
 			</a>

@@ -242,4 +242,81 @@ final class SettingsHubTest extends TestCase {
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringNotContainsString( 'nav-tab-wrapper', $output, 'Should not contain tabs navigation' );
 	}
+
+	/**
+	 * Test dashboard uses new CSS classes instead of inline styles.
+	 */
+	public function test_render_dashboard_uses_css_classes(): void {
+		$hub = SettingsHub::get_instance();
+
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			},
+			array(
+				'description' => 'Test description',
+				'version'     => '1.0.0',
+			)
+		);
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = ob_get_clean();
+
+		$this->assertNotFalse( $output, 'Output should not be false' );
+		$this->assertIsString( $output, 'Output should be a string' );
+		// Check for new CSS classes.
+		$this->assertStringContainsString( 'silverassist-dashboard-description', $output, 'Should use dashboard description class' );
+		$this->assertStringContainsString( 'silverassist-dashboard-grid', $output, 'Should use dashboard grid class' );
+		$this->assertStringContainsString( 'silverassist-plugin-card', $output, 'Should use plugin card class' );
+		$this->assertStringContainsString( 'card-header', $output, 'Should use card header class' );
+		$this->assertStringContainsString( 'card-content', $output, 'Should use card content class' );
+		$this->assertStringContainsString( 'silverassist-version-badge', $output, 'Should use version badge class' );
+		// Verify no inline styles for grid.
+		$this->assertStringNotContainsString( 'style="display: grid;', $output, 'Should not have inline grid styles' );
+	}
+
+	/**
+	 * Test empty state uses new CSS class.
+	 */
+	public function test_render_dashboard_empty_state_uses_css_class(): void {
+		$hub = SettingsHub::get_instance();
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = ob_get_clean();
+
+		$this->assertNotFalse( $output, 'Output should not be false' );
+		$this->assertIsString( $output, 'Output should be a string' );
+		$this->assertStringContainsString( 'silverassist-empty-state', $output, 'Should use empty state class' );
+		$this->assertStringContainsString( 'dashicons-admin-plugins', $output, 'Should contain dashicon' );
+	}
+
+	/**
+	 * Test tabs navigation uses new CSS class.
+	 */
+	public function test_render_tabs_uses_css_class(): void {
+		$hub = SettingsHub::get_instance();
+		$hub->enable_tabs( true );
+
+		$hub->register_plugin(
+			'test-plugin',
+			'Test Plugin',
+			static function (): void {
+				echo 'Settings';
+			}
+		);
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = ob_get_clean();
+
+		$this->assertNotFalse( $output, 'Output should not be false' );
+		$this->assertIsString( $output, 'Output should be a string' );
+		$this->assertStringContainsString( 'silverassist-hub-tabs', $output, 'Should use hub tabs class' );
+		// Verify no inline styles for tabs.
+		$this->assertStringNotContainsString( 'style="margin-bottom:', $output, 'Should not have inline margin styles' );
+	}
 }
