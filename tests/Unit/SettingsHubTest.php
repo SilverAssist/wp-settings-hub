@@ -413,7 +413,7 @@ final class SettingsHubTest extends TestCase {
 		$reflection      = new \ReflectionClass( $hub );
 		$property        = $reflection->getProperty( 'plugin_file' );
 		$property->setAccessible( true );
-		$captured_file = $property->getValue( $hub );
+		$captured_file   = $property->getValue( $hub );
 
 		$this->assertSame( $plugin_file_path, $captured_file, 'plugin_file should be captured internally for asset URL resolution' );
 	}
