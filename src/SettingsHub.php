@@ -367,7 +367,7 @@ final class SettingsHub {
 		<div class="silverassist-plugin-card">
 			<div class="card-header">
 				<h2>
-					<span class="dashicons dashicons-admin-plugins"></span>
+					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
 					<?php echo esc_html( $name ); ?>
 				</h2>
 				<?php if ( ! empty( $version ) ) : ?>
