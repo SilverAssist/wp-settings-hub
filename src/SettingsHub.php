@@ -49,6 +49,13 @@ final class SettingsHub {
 	private const CSS_HANDLE = 'silverassist-settings-hub';
 
 	/**
+	 * Package version for cache busting.
+	 *
+	 * @var string
+	 */
+	private const VERSION = '1.2.0';
+
+	/**
 	 * Whether styles have been registered.
 	 *
 	 * @var bool
@@ -179,18 +186,30 @@ final class SettingsHub {
 			return;
 		}
 
-		// Resolve CSS file path.
+		// Resolve CSS file path and URL.
 		$css_path = dirname( __DIR__ ) . '/assets/css/settings-hub.css';
 
-		// Convert filesystem path to URL.
-		$css_url = str_replace(
-			wp_normalize_path( ABSPATH ),
-			site_url( '/' ),
-			wp_normalize_path( $css_path )
-		);
+		// Convert filesystem path to URL using WordPress content directory as base.
+		// This handles standard installations, must-use plugins, and Composer vendor directories.
+		$content_dir = wp_normalize_path( WP_CONTENT_DIR );
+		$css_path_normalized = wp_normalize_path( $css_path );
+
+		if ( str_starts_with( $css_path_normalized, $content_dir ) ) {
+			// CSS is within wp-content directory.
+			$relative_path = substr( $css_path_normalized, strlen( $content_dir ) );
+			$css_url = content_url( $relative_path );
+		} else {
+			// Fallback: CSS is outside wp-content (e.g., in vendor/ symlinked elsewhere).
+			// Try using ABSPATH as fallback.
+			$css_url = str_replace(
+				wp_normalize_path( ABSPATH ),
+				site_url( '/' ),
+				$css_path_normalized
+			);
+		}
 
 		// Register and enqueue with fixed handle for deduplication.
-		wp_enqueue_style( self::CSS_HANDLE, $css_url, array(), '1.2.0', 'all' );
+		wp_enqueue_style( self::CSS_HANDLE, $css_url, array(), self::VERSION, 'all' );
 	}
 
 	/**
