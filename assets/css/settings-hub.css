@@ -153,6 +153,23 @@
 	height: 20px;
 }
 
+/* Page h1 version badge */
+.wrap > h1 .version-badge {
+	display: inline-block;
+	padding: var(--silver-hub-spacing-xs) var(--silver-hub-spacing-md);
+	background: var(--silver-hub-success-bg);
+	color: var(--silver-hub-success-text);
+	border: 1px solid var(--silver-hub-success-border);
+	border-radius: var(--silver-hub-radius-pill);
+	font-size: var(--silver-hub-font-size-xs);
+	font-weight: var(--silver-hub-font-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	vertical-align: middle;
+	margin-left: var(--silver-hub-spacing-md);
+}
+
+
 /* --------------------------------------------------------------------------
 	4.2 - Version Badge
 	-------------------------------------------------------------------------- */

@@ -497,9 +497,15 @@ final class SettingsHub {
 	 * }
 	 */
 	private function render_plugin_page( array $plugin ): void {
+		$version = $plugin['version'] ?? '';
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html( $plugin['name'] ); ?></h1>
+			<h1>
+				<?php echo esc_html( $plugin['name'] ); ?>
+				<?php if ( ! empty( $version ) ) : ?>
+					<span class="version-badge">v<?php echo esc_html( (string) $version ); ?></span>
+				<?php endif; ?>
+			</h1>
 
 			<?php if ( $this->render_tabs ) : ?>
 				<?php $this->render_tabs_navigation( $plugin['slug'] ); ?>
