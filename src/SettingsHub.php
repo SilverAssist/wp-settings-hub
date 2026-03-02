@@ -263,23 +263,23 @@ final class SettingsHub {
 		}
 
 		$normalized_asset = wp_normalize_path( $asset_file );
-		$asset_url        = str_replace(
+		$url_candidate    = str_replace(
 			wp_normalize_path( ABSPATH ),
 			trailingslashit( site_url() ),
 			$normalized_asset
 		);
 
 		// If the replacement did not change the path, ABSPATH was not a prefix.
-		if ( $asset_url === $normalized_asset ) {
+		if ( $url_candidate === $normalized_asset ) {
 			return '';
 		}
 
 		// Ensure we ended up with an HTTP(S) URL, not a filesystem path.
-		if ( ! preg_match( '#^https?://#', $asset_url ) ) {
+		if ( ! preg_match( '#^https?://#', $url_candidate ) ) {
 			return '';
 		}
 
-		return $asset_url;
+		return $url_candidate;
 	}
 
 	/**

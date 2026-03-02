@@ -390,6 +390,8 @@ final class SettingsHubTest extends TestCase {
 	public function test_plugin_file_not_stored_in_plugins(): void {
 		$hub = SettingsHub::get_instance();
 
+		$plugin_file_path = '/path/to/plugin.php';
+
 		$hub->register_plugin(
 			'test-plugin',
 			'Test Plugin',
@@ -399,11 +401,20 @@ final class SettingsHubTest extends TestCase {
 			array(
 				'description' => 'Test description',
 				'version'     => '1.0.0',
-				'plugin_file' => '/path/to/plugin.php',
+				'plugin_file' => $plugin_file_path,
 			)
 		);
 
+		// Verify plugin_file is not in public plugin data.
 		$plugins = $hub->get_plugins();
 		$this->assertArrayNotHasKey( 'plugin_file', $plugins['test-plugin'], 'plugin_file should not be stored in plugin data' );
+
+		// Verify plugin_file was captured internally by using reflection.
+		$reflection      = new \ReflectionClass( $hub );
+		$property        = $reflection->getProperty( 'plugin_file' );
+		$property->setAccessible( true );
+		$captured_file = $property->getValue( $hub );
+
+		$this->assertSame( $plugin_file_path, $captured_file, 'plugin_file should be captured internally for asset URL resolution' );
 	}
 }
