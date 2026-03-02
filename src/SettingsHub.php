@@ -42,27 +42,6 @@ final class SettingsHub {
 	private array $plugins = array();
 
 	/**
-	 * CSS handle for WordPress style deduplication.
-	 *
-	 * @var string
-	 */
-	private const CSS_HANDLE = 'silverassist-settings-hub';
-
-	/**
-	 * Package version for cache busting.
-	 *
-	 * @var string
-	 */
-	private const VERSION = '1.2.0';
-
-	/**
-	 * Whether styles have been registered.
-	 *
-	 * @var bool
-	 */
-	private bool $styles_registered = false;
-
-	/**
 	 * Parent menu slug.
 	 *
 	 * @var string
@@ -82,6 +61,33 @@ final class SettingsHub {
 	 * @var bool
 	 */
 	private bool $render_tabs = true;
+
+	/**
+	 * Whether the styles hook has been registered.
+	 *
+	 * @var bool
+	 */
+	private bool $styles_registered = false;
+
+	/**
+	 * Plugin file path used to resolve asset URLs.
+	 *
+	 * Stored from the first plugin that registers with the hub.
+	 * Used to derive the vendor directory URL, avoiding the __DIR__ bug
+	 * when PHP autoloader loads the class from a single vendor directory.
+	 *
+	 * @see https://github.com/SilverAssist/wp-github-updater/issues/17
+	 *
+	 * @var string
+	 */
+	private string $plugin_file = '';
+
+	/**
+	 * CSS handle for deduplication across plugins.
+	 *
+	 * @var string
+	 */
+	private const CSS_HANDLE = 'silverassist-settings-hub';
 
 	/**
 	 * Private constructor to enforce singleton pattern.
@@ -115,10 +121,11 @@ final class SettingsHub {
 	 * @param array<string, string|array<array<string, string|callable>>> $args {
 	 *     Optional arguments for the plugin.
 	 *
-	 *     @type string   $description Plugin description.
-	 *     @type string   $version     Plugin version number.
-	 *     @type string   $tab_title   Custom tab title (defaults to plugin name).
-	 *     @type array[]  $actions     Array of action buttons with label, url/callback, and class.
+	 *     @type string   $description  Plugin description.
+	 *     @type string   $version      Plugin version number.
+	 *     @type string   $tab_title    Custom tab title (defaults to plugin name).
+	 *     @type string   $plugin_file  Absolute path to the plugin's main file (for asset URL resolution).
+	 *     @type array[]  $actions      Array of action buttons with label, url/callback, and class.
 	 * }
 	 */
 	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
@@ -132,10 +139,15 @@ final class SettingsHub {
 			$args
 		);
 
+		// Capture the first plugin_file for asset URL resolution.
+		if ( empty( $this->plugin_file ) && ! empty( $args['plugin_file'] ) ) {
+			$this->plugin_file = (string) $args['plugin_file'];
+		}
+
 		// Hook into admin_menu to register menus.
 		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
 
-		// Register styles hook once.
+		// Register styles hook once (handle deduplication is done by WordPress).
 		if ( ! $this->styles_registered ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_styles' ) );
 			$this->styles_registered = true;
@@ -171,60 +183,80 @@ final class SettingsHub {
 	}
 
 	/**
-	 * Enqueue dashboard styles on Silver Assist admin pages.
+	 * Enqueue dashboard styles on Silver Assist pages.
 	 *
-	 * Registers and enqueues the external CSS file using a fixed handle
-	 * for WordPress automatic deduplication across multiple plugin instances.
+	 * Uses a unique handle so WordPress deduplicates the enqueue
+	 * regardless of how many plugins include this package.
 	 *
-	 * @param string $hook_suffix Current admin page hook suffix.
+	 * @param string $hook_suffix The current admin page hook suffix.
 	 *
 	 * @internal
 	 */
 	public function enqueue_styles( string $hook_suffix ): void {
-		// Only enqueue on Silver Assist pages.
-		if ( ! $this->is_silver_assist_page( $hook_suffix ) ) {
+		// Only load on Silver Assist pages (top-level and submenu pages).
+		if ( 'toplevel_page_' . self::PARENT_SLUG !== $hook_suffix
+			&& strpos( $hook_suffix, self::PARENT_SLUG ) === false ) {
 			return;
 		}
 
-		// Resolve CSS file path and URL.
-		$css_path = dirname( __DIR__ ) . '/assets/css/settings-hub.css';
+		$css_url = $this->get_package_asset_url( 'assets/css/settings-hub.css' );
 
-		// Convert filesystem path to URL using WordPress content directory as base.
-		// This handles standard installations, must-use plugins, and Composer vendor directories.
-		$content_dir = wp_normalize_path( WP_CONTENT_DIR );
-		$css_path_normalized = wp_normalize_path( $css_path );
-
-		if ( str_starts_with( $css_path_normalized, $content_dir ) ) {
-			// CSS is within wp-content directory.
-			$relative_path = substr( $css_path_normalized, strlen( $content_dir ) );
-			$css_url = content_url( $relative_path );
-		} elseif ( str_starts_with( $css_path_normalized, wp_normalize_path( ABSPATH ) ) ) {
-			// Fallback: CSS is within ABSPATH (e.g., in vendor/ symlinked elsewhere).
-			$css_url = str_replace(
-				wp_normalize_path( ABSPATH ),
-				site_url( '/' ),
-				$css_path_normalized
-			);
-		} else {
-			// CSS file is outside both WP_CONTENT_DIR and ABSPATH - cannot generate valid URL.
-			// This should not happen in standard WordPress installations.
+		if ( empty( $css_url ) ) {
 			return;
 		}
 
-		// Register and enqueue with fixed handle for deduplication.
-		wp_enqueue_style( self::CSS_HANDLE, $css_url, array(), self::VERSION, 'all' );
+		wp_enqueue_style(
+			self::CSS_HANDLE,
+			$css_url,
+			array(),
+			'1.2.0'
+		);
 	}
 
 	/**
-	 * Check if the current page is a Silver Assist admin page.
+	 * Get the URL to a package asset file.
 	 *
-	 * @param string $hook_suffix Current admin page hook suffix.
+	 * Resolves the URL to assets within the vendor/silverassist/wp-settings-hub directory.
+	 * Uses plugin_file (provided via register_plugin) to derive the correct vendor path,
+	 * replicating the pattern from wp-github-updater's getPackageAssetUrl().
 	 *
-	 * @return bool True if on a Silver Assist page, false otherwise.
+	 * @param string $asset_path Relative path to asset (e.g., 'assets/css/settings-hub.css').
+	 * @return string Full URL to the asset file, or empty string if unresolvable.
+	 *
+	 * @since 1.2.0
+	 * @see   \SilverAssist\GitHubUpdater\Updater::getPackageAssetUrl()
 	 */
-	private function is_silver_assist_page( string $hook_suffix ): bool {
-		return str_starts_with( $hook_suffix, 'toplevel_page_' . self::PARENT_SLUG )
-			|| str_contains( $hook_suffix, self::PARENT_SLUG );
+	private function get_package_asset_url( string $asset_path ): string {
+		// Primary: derive from plugin_file (avoids __DIR__ autoloader bug).
+		if ( ! empty( $this->plugin_file ) ) {
+			$plugin_dir = wp_normalize_path( dirname( $this->plugin_file ) );
+			$base_url   = rtrim( plugin_dir_url( $this->plugin_file ), '/' );
+
+			// Standard Composer vendor path for this package.
+			$vendor_relative = 'vendor/silverassist/wp-settings-hub';
+			$full_path       = $plugin_dir . '/' . $vendor_relative;
+
+			if ( is_dir( $full_path ) ) {
+				$asset_file = $full_path . '/' . ltrim( $asset_path, '/' );
+				if ( file_exists( $asset_file ) ) {
+					return $base_url . '/' . $vendor_relative . '/' . ltrim( $asset_path, '/' );
+				}
+			}
+		}
+
+		// Fallback: resolve from __DIR__ (single-plugin / non-autoloaded scenario).
+		$package_dir = wp_normalize_path( dirname( __DIR__ ) );
+		$asset_file  = $package_dir . '/' . ltrim( $asset_path, '/' );
+
+		if ( ! file_exists( $asset_file ) ) {
+			return '';
+		}
+
+		return str_replace(
+			wp_normalize_path( ABSPATH ),
+			trailingslashit( site_url() ),
+			wp_normalize_path( $asset_file )
+		);
 	}
 
 	/**
@@ -334,8 +366,10 @@ final class SettingsHub {
 		?>
 		<div class="silverassist-plugin-card">
 			<div class="card-header">
-				<h2><?php echo esc_html( $name ); ?></h2>
-				<span class="dashicons dashicons-admin-settings"></span>
+				<h2>
+					<span class="dashicons dashicons-admin-plugins"></span>
+					<?php echo esc_html( $name ); ?>
+				</h2>
 				<?php if ( ! empty( $version ) ) : ?>
 					<span class="silverassist-version-badge">
 						v<?php echo esc_html( (string) $version ); ?>
