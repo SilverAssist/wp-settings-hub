@@ -326,7 +326,7 @@ final class SettingsHub {
 
 			<?php if ( empty( $this->plugins ) ) : ?>
 				<div class="silverassist-empty-state">
-					<span class="dashicons dashicons-admin-plugins"></span>
+					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
 					<p>
 						<?php esc_html_e( 'No Silver Assist plugins have been registered yet.', 'silverassist-settings-hub' ); ?>
 					</p>
