@@ -277,7 +277,7 @@
  *
  * Browser support: Chrome 105+, Safari 16+, Firefox 110+
  * Graceful degradation: Falls back to media queries below for older browsers.
- * All major browsers as of 2024 support container queries.
+ * These browsers are now widely adopted and considered standard.
  */
 @container (max-width: 640px) {
 	.silverassist-dashboard-grid {

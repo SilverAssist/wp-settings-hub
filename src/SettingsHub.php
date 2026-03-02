@@ -198,14 +198,17 @@ final class SettingsHub {
 			// CSS is within wp-content directory.
 			$relative_path = substr( $css_path_normalized, strlen( $content_dir ) );
 			$css_url = content_url( $relative_path );
-		} else {
-			// Fallback: CSS is outside wp-content (e.g., in vendor/ symlinked elsewhere).
-			// Try using ABSPATH as fallback.
+		} elseif ( str_starts_with( $css_path_normalized, wp_normalize_path( ABSPATH ) ) ) {
+			// Fallback: CSS is within ABSPATH (e.g., in vendor/ symlinked elsewhere).
 			$css_url = str_replace(
 				wp_normalize_path( ABSPATH ),
 				site_url( '/' ),
 				$css_path_normalized
 			);
+		} else {
+			// CSS file is outside both WP_CONTENT_DIR and ABSPATH - cannot generate valid URL.
+			// This should not happen in standard WordPress installations.
+			return;
 		}
 
 		// Register and enqueue with fixed handle for deduplication.
