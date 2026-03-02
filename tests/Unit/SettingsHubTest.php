@@ -274,8 +274,12 @@ final class SettingsHubTest extends TestCase {
 		$this->assertStringContainsString( 'card-header', $output, 'Should use card header class' );
 		$this->assertStringContainsString( 'card-content', $output, 'Should use card content class' );
 		$this->assertStringContainsString( 'silverassist-version-badge', $output, 'Should use version badge class' );
-		// Verify no inline styles for grid.
-		$this->assertStringNotContainsString( 'style="display: grid;', $output, 'Should not have inline grid styles' );
+		// Verify grid has no inline style attribute.
+		$this->assertDoesNotMatchRegularExpression(
+			'/<div[^>]*class="[^"]*silverassist-dashboard-grid[^"]*"[^>]*style=/i',
+			$output,
+			'Dashboard grid should not have inline styles'
+		);
 	}
 
 	/**
@@ -316,7 +320,11 @@ final class SettingsHubTest extends TestCase {
 		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringContainsString( 'silverassist-hub-tabs', $output, 'Should use hub tabs class' );
-		// Verify no inline styles for tabs.
-		$this->assertStringNotContainsString( 'style="margin-bottom:', $output, 'Should not have inline margin styles' );
+		// Verify nav-tab-wrapper has no inline style attribute.
+		$this->assertDoesNotMatchRegularExpression(
+			'/<nav[^>]*class="[^"]*nav-tab-wrapper[^"]*"[^>]*style=/i',
+			$output,
+			'Tabs navigation should not have inline styles'
+		);
 	}
 }

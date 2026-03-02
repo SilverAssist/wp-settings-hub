@@ -182,7 +182,7 @@ final class SettingsHub {
 	 */
 	public function enqueue_styles( string $hook_suffix ): void {
 		// Only enqueue on Silver Assist pages.
-		if ( ! str_starts_with( $hook_suffix, 'toplevel_page_' . self::PARENT_SLUG ) && ! str_contains( $hook_suffix, self::PARENT_SLUG ) ) {
+		if ( ! $this->is_silver_assist_page( $hook_suffix ) ) {
 			return;
 		}
 
@@ -210,6 +210,18 @@ final class SettingsHub {
 
 		// Register and enqueue with fixed handle for deduplication.
 		wp_enqueue_style( self::CSS_HANDLE, $css_url, array(), self::VERSION, 'all' );
+	}
+
+	/**
+	 * Check if the current page is a Silver Assist admin page.
+	 *
+	 * @param string $hook_suffix Current admin page hook suffix.
+	 *
+	 * @return bool True if on a Silver Assist page, false otherwise.
+	 */
+	private function is_silver_assist_page( string $hook_suffix ): bool {
+		return str_starts_with( $hook_suffix, 'toplevel_page_' . self::PARENT_SLUG )
+			|| str_contains( $hook_suffix, self::PARENT_SLUG );
 	}
 
 	/**
