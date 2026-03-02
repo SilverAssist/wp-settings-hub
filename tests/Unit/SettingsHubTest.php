@@ -390,7 +390,12 @@ final class SettingsHubTest extends TestCase {
 			return;
 		}
 
-		$files = array_diff( scandir( $dir ), array( '.', '..' ) );
+		$entries = scandir( $dir );
+		if ( false === $entries ) {
+			return;
+		}
+
+		$files = array_diff( $entries, array( '.', '..' ) );
 		foreach ( $files as $file ) {
 			$path = $dir . '/' . $file;
 			is_dir( $path ) ? $this->remove_directory_recursive( $path ) : unlink( $path );
