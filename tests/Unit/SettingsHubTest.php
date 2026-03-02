@@ -343,7 +343,7 @@ final class SettingsHubTest extends TestCase {
 		$hub = SettingsHub::get_instance();
 
 		// Create a temporary plugin structure to allow URL resolution to succeed.
-		$temp_plugin_dir = sys_get_temp_dir() . '/test-plugin-' . uniqid();
+		$temp_plugin_dir = sys_get_temp_dir() . '/test-plugin-' . bin2hex( random_bytes( 8 ) );
 		$vendor_path     = $temp_plugin_dir . '/vendor/silverassist/wp-settings-hub/assets/css';
 		mkdir( $vendor_path, 0777, true );
 		copy(
@@ -370,19 +370,31 @@ final class SettingsHubTest extends TestCase {
 		// Check that the style was enqueued.
 		$is_enqueued = wp_style_is( 'silverassist-settings-hub', 'enqueued' );
 
-		// Cleanup.
-		array_map( 'unlink', glob( $vendor_path . '/*' ) );
-		rmdir( $vendor_path );
-		rmdir( dirname( $vendor_path ) );
-		rmdir( dirname( dirname( $vendor_path ) ) );
-		rmdir( dirname( dirname( dirname( $vendor_path ) ) ) );
-		unlink( $plugin_file );
-		rmdir( $temp_plugin_dir );
+		// Cleanup: recursively remove temp directory.
+		$this->remove_directory_recursive( $temp_plugin_dir );
 
 		$this->assertTrue(
 			$is_enqueued,
 			'CSS should be enqueued on Silver Assist pages'
 		);
+	}
+
+	/**
+	 * Recursively remove a directory and its contents.
+	 *
+	 * @param string $dir Directory path to remove.
+	 */
+	private function remove_directory_recursive( string $dir ): void {
+		if ( ! is_dir( $dir ) ) {
+			return;
+		}
+
+		$files = array_diff( scandir( $dir ), array( '.', '..' ) );
+		foreach ( $files as $file ) {
+			$path = $dir . '/' . $file;
+			is_dir( $path ) ? $this->remove_directory_recursive( $path ) : unlink( $path );
+		}
+		rmdir( $dir );
 	}
 
 	/**
