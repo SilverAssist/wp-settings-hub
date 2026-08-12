@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <ruleset name="SilverAssist Settings Hub Standards">
-	<description>WordPress Coding Standards for SilverAssist Settings Hub</description>
-	
+	<description>Uses the shared SilverAssistWP ruleset from silverassist/wp-coding-standards.</description>
+
 	<!-- What to scan -->
 	<file>.</file>
 
@@ -21,26 +21,10 @@
 	<!-- Check code for cross-version PHP compatibility -->
 	<config name="testVersion" value="8.2-"/>
 
-	<!-- Include WordPress-Extra standard -->
-	<rule ref="WordPress-Extra">
-		<!-- Allow short array syntax -->
-		<exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
-		
-		<!-- PSR-4 PascalCase filenames, not WordPress hyphenated lowercase -->
-		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
-		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
-		
-		<!-- Allow opening braces on same line (K&R style) -->
-		<exclude name="Generic.Functions.OpeningFunctionBraceKernighanRitchie"/>
-		<exclude name="Generic.Classes.OpeningBraceSameLine"/>
-	</rule>
-	
-	<!-- Allow short array syntax explicitly -->
-	<rule ref="Universal.Arrays.DisallowShortArraySyntax">
-		<exclude name="Universal.Arrays.DisallowShortArraySyntax.Found"/>
-	</rule>
+	<rule ref="SilverAssistWP"/>
 
-	<!-- Enforce WordPress naming conventions -->
+	<!-- Enforce WordPress naming conventions. Plugin-specific, can't live
+	     in the shared ruleset. -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
@@ -49,13 +33,6 @@
 			</property>
 		</properties>
 	</rule>
-
-	<!-- Enforce WordPress documentation standards -->
-	<rule ref="WordPress-Docs"/>
-
-	<!-- Extra rules -->
-	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter"/>
-	<rule ref="Generic.Commenting.Todo"/>
 
 	<!-- Minimum WordPress version -->
 	<config name="minimum_supported_wp_version" value="6.5"/>

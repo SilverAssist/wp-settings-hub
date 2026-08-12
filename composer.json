@@ -9,10 +9,22 @@
             "email": "support@silverassist.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../coding-standards"
+        },
+        {
+            "type": "path",
+            "url": "../wp-coding-standards"
+        }
+    ],
     "require": {
         "php": "^8.2"
     },
     "require-dev": {
+        "silverassist/coding-standards": "^1.0",
+        "silverassist/wp-coding-standards": "^1.0",
         "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "php-stubs/wordpress-stubs": "^6.6",
         "php-stubs/wp-cli-stubs": "^2.10",
