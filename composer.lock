@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1854bb81f233030e6d872db0f45a8a1d",
+    "content-hash": "6d1ae13b71c81a478e366ed18d68666c",
     "packages": [],
     "packages-dev": [
         {
@@ -2419,10 +2419,16 @@
         {
             "name": "silverassist/coding-standards",
             "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SilverAssist/coding-standards.git",
+                "reference": "4fbfdba69f164644067bcf92ca5c5cec60cac159"
+            },
             "dist": {
-                "type": "path",
-                "url": "../coding-standards",
-                "reference": "0108c7e4b8853fb113db75599449ffb70100fdf6"
+                "type": "zip",
+                "url": "https://api.github.com/repos/SilverAssist/coding-standards/zipball/4fbfdba69f164644067bcf92ca5c5cec60cac159",
+                "reference": "4fbfdba69f164644067bcf92ca5c5cec60cac159",
+                "shasum": ""
             },
             "require": {
                 "php": ">=8.2",
@@ -2433,6 +2439,7 @@
                 "phpstan/phpstan": "^2.1"
             },
             "type": "phpcodesniffer-standard",
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "PolyForm-Noncommercial-1.0.0"
             ],
@@ -2443,9 +2450,11 @@
                 }
             ],
             "description": "Framework-agnostic PHPCS ruleset (PSR-12 + PHPDoc enforcement) and PHPStan base config shared by all Silver Assist PHP projects, WordPress or not.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/SilverAssist/coding-standards/issues",
+                "source": "https://github.com/SilverAssist/coding-standards/tree/v1.0.0"
+            },
+            "time": "2026-08-12T16:54:20+00:00"
         },
         {
             "name": "silverassist/wp-coding-standards",
@@ -2453,7 +2462,7 @@
             "dist": {
                 "type": "path",
                 "url": "../wp-coding-standards",
-                "reference": "9e8a1a24c3964eeb6424470d80d4bd8ce15a0f03"
+                "reference": "f924cffdacfc4902c069d4a92394a24214d387f7"
             },
             "require": {
                 "php": ">=8.2",

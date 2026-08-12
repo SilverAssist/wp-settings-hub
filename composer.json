@@ -12,10 +12,6 @@
     "repositories": [
         {
             "type": "path",
-            "url": "../coding-standards"
-        },
-        {
-            "type": "path",
             "url": "../wp-coding-standards"
         }
     ],
