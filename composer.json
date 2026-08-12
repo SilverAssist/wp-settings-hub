@@ -9,12 +9,6 @@
             "email": "support@silverassist.com"
         }
     ],
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../wp-coding-standards"
-        }
-    ],
     "require": {
         "php": "^8.2"
     },
