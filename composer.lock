@@ -2459,16 +2459,16 @@
         },
         {
             "name": "silverassist/wp-coding-standards",
-            "version": "1.0.0",
+            "version": "v1.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SilverAssist/wp-coding-standards.git",
-                "reference": "8a0d38c494fc8318b0eeb40c3ff2fc53769f1463"
+                "reference": "f6836fb32e70e681d59d131f6ad1441e5a8ed92f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SilverAssist/wp-coding-standards/zipball/8a0d38c494fc8318b0eeb40c3ff2fc53769f1463",
-                "reference": "8a0d38c494fc8318b0eeb40c3ff2fc53769f1463",
+                "url": "https://api.github.com/repos/SilverAssist/wp-coding-standards/zipball/f6836fb32e70e681d59d131f6ad1441e5a8ed92f",
+                "reference": "f6836fb32e70e681d59d131f6ad1441e5a8ed92f",
                 "shasum": ""
             },
             "require": {
@@ -2499,9 +2499,9 @@
             "description": "WordPress-plugin PHPCS ruleset, PHPStan config, and reusable CI/CD workflows for Silver Assist plugins. Requires silverassist/coding-standards for the framework-agnostic PSR-12 base.",
             "support": {
                 "issues": "https://github.com/SilverAssist/wp-coding-standards/issues",
-                "source": "https://github.com/SilverAssist/wp-coding-standards/tree/v1.0.0"
+                "source": "https://github.com/SilverAssist/wp-coding-standards/tree/v1.1.5"
             },
-            "time": "2026-08-12T17:15:40+00:00"
+            "time": "2026-08-13T17:09:12+00:00"
         },
         {
             "name": "slevomat/coding-standard",
@@ -2982,5 +2982,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
