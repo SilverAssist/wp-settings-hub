@@ -10,8 +10,8 @@
     }
   ],
   "repositories": [
-    { "type": "vcs", "url": "https://github.com/SilverAssist/coding-standards" },
-    { "type": "vcs", "url": "https://github.com/SilverAssist/wp-coding-standards" }
+    { "type": "vcs", "url": "https://github.com/SilverAssist/coding-standards", "no-api": true },
+    { "type": "vcs", "url": "https://github.com/SilverAssist/wp-coding-standards", "no-api": true }
   ],
   "require": {
     "php": "^8.2"
