@@ -38,6 +38,7 @@ jobs:
     name: Quality Checks
     needs: validate
     uses: ./.github/workflows/quality-checks.yml
+    secrets: inherit
     with:
       php-version: '8.3'
       upload-coverage: false
@@ -59,6 +60,8 @@ jobs:
           coverage: none
           
       - name: 📦 Install production dependencies
+        env:
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
         run: composer install --no-dev --no-interaction --no-progress --optimize-autoloader
         
       - name: 📦 Extract version from tag
