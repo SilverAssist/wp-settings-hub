@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "58f1dc30173bdbd39f926d49d938fdee",
+    "content-hash": "88c74ef551230d18ca81dcd073cecd63",
     "packages": [],
     "packages-dev": [
         {
@@ -2422,7 +2422,7 @@
             "version": "1.0.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/SilverAssist/coding-standards.git",
+                "url": "https://github.com/SilverAssist/coding-standards",
                 "reference": "4fbfdba69f164644067bcf92ca5c5cec60cac159"
             },
             "dist": {
@@ -2462,7 +2462,7 @@
             "version": "v1.1.5",
             "source": {
                 "type": "git",
-                "url": "https://github.com/SilverAssist/wp-coding-standards.git",
+                "url": "https://github.com/SilverAssist/wp-coding-standards",
                 "reference": "f6836fb32e70e681d59d131f6ad1441e5a8ed92f"
             },
             "dist": {
