@@ -894,16 +894,16 @@
         },
         {
             "name": "phpstan/phpdoc-parser",
-            "version": "2.3.3",
+            "version": "2.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpdoc-parser.git",
-                "reference": "fb19eedd2bb67ff8cf7a5502ad329e701d6398a3"
+                "reference": "1427af4647235b4a73b13940b1f1258d3584f36e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/fb19eedd2bb67ff8cf7a5502ad329e701d6398a3",
-                "reference": "fb19eedd2bb67ff8cf7a5502ad329e701d6398a3",
+                "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/1427af4647235b4a73b13940b1f1258d3584f36e",
+                "reference": "1427af4647235b4a73b13940b1f1258d3584f36e",
                 "shasum": ""
             },
             "require": {
@@ -935,9 +935,9 @@
             "description": "PHPDoc parser with support for nullable, intersection and generic types",
             "support": {
                 "issues": "https://github.com/phpstan/phpdoc-parser/issues",
-                "source": "https://github.com/phpstan/phpdoc-parser/tree/2.3.3"
+                "source": "https://github.com/phpstan/phpdoc-parser/tree/2.3.6"
             },
-            "time": "2026-07-08T07:01:06+00:00"
+            "time": "2026-09-27T20:07:45+00:00"
         },
         {
             "name": "phpstan/phpstan",
@@ -2419,16 +2419,16 @@
         },
         {
             "name": "silverassist/coding-standards",
-            "version": "1.0.0",
+            "version": "v1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SilverAssist/coding-standards",
-                "reference": "4fbfdba69f164644067bcf92ca5c5cec60cac159"
+                "reference": "e33a94b0730b6703e67337db897b750b1137962e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SilverAssist/coding-standards/zipball/4fbfdba69f164644067bcf92ca5c5cec60cac159",
-                "reference": "4fbfdba69f164644067bcf92ca5c5cec60cac159",
+                "url": "https://api.github.com/repos/SilverAssist/coding-standards/zipball/e33a94b0730b6703e67337db897b750b1137962e",
+                "reference": "e33a94b0730b6703e67337db897b750b1137962e",
                 "shasum": ""
             },
             "require": {
@@ -2440,7 +2440,17 @@
                 "phpstan/phpstan": "^2.1"
             },
             "type": "phpcodesniffer-standard",
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "setup-hooks": [
+                    "git config core.hooksPath .githooks"
+                ],
+                "post-install-cmd": [
+                    "@setup-hooks"
+                ],
+                "post-update-cmd": [
+                    "@setup-hooks"
+                ]
+            },
             "license": [
                 "PolyForm-Noncommercial-1.0.0"
             ],
@@ -2451,24 +2461,20 @@
                 }
             ],
             "description": "Framework-agnostic PHPCS ruleset (PSR-12 + PHPDoc enforcement) and PHPStan base config shared by all Silver Assist PHP projects, WordPress or not.",
-            "support": {
-                "issues": "https://github.com/SilverAssist/coding-standards/issues",
-                "source": "https://github.com/SilverAssist/coding-standards/tree/v1.0.0"
-            },
-            "time": "2026-08-12T16:54:20+00:00"
+            "time": "2026-09-25T13:16:57+00:00"
         },
         {
             "name": "silverassist/wp-coding-standards",
-            "version": "v1.1.5",
+            "version": "v1.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SilverAssist/wp-coding-standards",
-                "reference": "f6836fb32e70e681d59d131f6ad1441e5a8ed92f"
+                "reference": "91e5add049b0afce9b99ed3f4376254cc312cce4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SilverAssist/wp-coding-standards/zipball/f6836fb32e70e681d59d131f6ad1441e5a8ed92f",
-                "reference": "f6836fb32e70e681d59d131f6ad1441e5a8ed92f",
+                "url": "https://api.github.com/repos/SilverAssist/wp-coding-standards/zipball/91e5add049b0afce9b99ed3f4376254cc312cce4",
+                "reference": "91e5add049b0afce9b99ed3f4376254cc312cce4",
                 "shasum": ""
             },
             "require": {
@@ -2486,7 +2492,17 @@
                 "szepeviktor/phpstan-wordpress": "^1.3 || ^2.0"
             },
             "type": "phpcodesniffer-standard",
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "setup-hooks": [
+                    "git config core.hooksPath .githooks"
+                ],
+                "post-install-cmd": [
+                    "@setup-hooks"
+                ],
+                "post-update-cmd": [
+                    "@setup-hooks"
+                ]
+            },
             "license": [
                 "PolyForm-Noncommercial-1.0.0"
             ],
@@ -2497,11 +2513,7 @@
                 }
             ],
             "description": "WordPress-plugin PHPCS ruleset, PHPStan config, and reusable CI/CD workflows for Silver Assist plugins. Requires silverassist/coding-standards for the framework-agnostic PSR-12 base.",
-            "support": {
-                "issues": "https://github.com/SilverAssist/wp-coding-standards/issues",
-                "source": "https://github.com/SilverAssist/wp-coding-standards/tree/v1.1.5"
-            },
-            "time": "2026-08-13T17:09:12+00:00"
+            "time": "2026-09-25T14:39:59+00:00"
         },
         {
             "name": "slevomat/coding-standard",
