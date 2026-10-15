@@ -21,7 +21,7 @@
     "php-stubs/wordpress-stubs": "^6.6",
     "php-stubs/wp-cli-stubs": "^2.10",
     "phpcompatibility/phpcompatibility-wp": "^2.1",
-    "phpstan/phpstan": "^1.10",
+    "phpstan/phpstan": "^2.2",
     "phpunit/phpunit": "^9.6",
     "silverassist/coding-standards": "^1.0",
     "silverassist/wp-coding-standards": "^1.0",
