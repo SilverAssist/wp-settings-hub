@@ -241,7 +241,7 @@
       "id": "phase-3-capability",
       "title": "Phase 3: Per-plugin capability",
       "kind": "phase",
-      "status": "in-progress",
+      "status": "completed",
       "notes": "Branch: 48-phase-3-capability. Implement then document. Design decisions (correct here if the owner disagrees): parent menu and Dashboard stay manage_options, filterable via silverassist_settings_hub_dashboard_capability; per-plugin filter silverassist_settings_hub_plugin_capability; invalid values fail closed to manage_options with _doing_it_wrong; validation regex ^[A-Za-z0-9_-]+$ (no sanitize_key, it lowercases); cards and tabs filtered with current_user_can; Dashboard tab hidden without the dashboard capability; wp_die(403) guard in render_plugin_page; capability assigned after array_merge. The Phase 2 access tests (test_administrator_can_access_every_hub_page, test_editor_and_subscriber_cannot_access_hub_pages) carry comments saying Phase 3 extends them; replace the editor/subscriber expectations as the capability work lands.",
       "findings": [
         "src/SettingsHub.php:295, :307 and :322 hardcode manage_options; register_plugin() never reads $args['capability'].",
@@ -302,11 +302,11 @@
         },
         {
           "id": "review",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "pr",
-          "status": "not-started"
+          "status": "completed"
         }
       ],
       "log": [
@@ -317,6 +317,10 @@
         {
           "date": "2026-10-15",
           "summary": "Interaction with the open UX branch (#49, feature/49-ux-design-system): its dashboard count uses count( $this->plugins ), which after this phase should count only the visible plugins, and its tests edit tests/Unit/SettingsHubTest.php, which Phase 2 rewrote. Whichever branch merges second must reconcile both. Not touched here."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Merged as PR #54 (squash d4d5f58). manual-check-as-editor was not done in a real wp-admin; role behaviour is covered by CapabilityIntegrationTest against real WordPress."
         }
       ]
     },
@@ -324,7 +328,7 @@
       "id": "phase-4-code-hardening",
       "title": "Phase 4: Code hardening",
       "kind": "phase",
-      "status": "not-started",
+      "status": "in-progress",
       "notes": "Branch: 48-phase-4-hardening. Each fix lands with a test that is red before and green after; record the red run in the log.",
       "findings": [
         "register_submenus() is not idempotent: firing admin_menu twice yields [silver-assist, early, early, late]. A plugin registered from admin_menu priority 10 gets no submenu in that request.",
@@ -341,7 +345,7 @@
       "tasks": [
         {
           "id": "branch",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "idempotent-and-late-registration",
@@ -390,13 +394,18 @@
           "status": "not-started"
         }
       ],
-      "log": []
+      "log": [
+        {
+          "date": "2026-10-15",
+          "summary": "Branch 48-phase-4-hardening created from main at e619288 with a plain git checkout -b (no gh issue develop link, which auto-closes #48 on merge)."
+        }
+      ]
     },
     {
       "id": "phase-5a-independent-docs",
       "title": "Phase 5a: Documentation that does not depend on Phase 3 or 4",
       "kind": "phase",
-      "status": "in-progress",
+      "status": "completed",
       "notes": "Branch 48-phase-5a-docs, stacked on 48-phase-3-capability. Split out of Phase 5 so it could be written in parallel with Phase 3. Written by a Sonnet subagent in a git worktree, then checked and corrected here; the three conflicts with the Phase 3 docs were small and were resolved by combining both sides. Once Phase 3 is merged, move this branch onto main with `git rebase --onto main 48-phase-3-capability 48-phase-5a-docs`.",
       "findings": [
         "Part of the work was a decision, not a fix: the subagent removed the Packagist badges, the plain `composer require` and the \"(private repository)\" heading because the package and the standards repos are public and the package is on Packagist. The original install text was restored; the owner has to decide the install story (see questions in the PR).",
@@ -436,17 +445,21 @@
         },
         {
           "id": "review",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "pr",
-          "status": "not-started"
+          "status": "completed"
         }
       ],
       "log": [
         {
           "date": "2026-10-15",
           "summary": "First attempt failed on a session limit before editing anything. Second attempt produced one commit; its report was checked against the code, the install-story change was reverted, a coverage-script description was softened and the Phase 3 conflicts were resolved."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Merged as PR #55 (squash e619288), rebased onto main after #54."
         }
       ]
     },
