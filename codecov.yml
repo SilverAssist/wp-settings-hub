@@ -1,12 +1,14 @@
 # Codecov configuration.
 #
-# Project target: 98.31% (Codecov total for main after Phase 4 of #48, commit 1b4dac9) minus 2 points.
+# Project target: 98.26% minus 2 points. 98.26% (282 of 287 lines) is the line coverage PHPUnit printed in the
+# CI run for main after Phase 4 of #48 (commit 841988e). Codecov computes its own figure from the same clover
+# file, and the 2 point margin absorbs a small difference.
 # Raise it only when coverage has risen and stays there.
 coverage:
   status:
     project:
       default:
-        target: 96.31%
+        target: 96.26%
         # No allowed drop below the target, the 2 point margin is already in it.
         threshold: 0%
     patch:

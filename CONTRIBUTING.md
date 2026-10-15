@@ -235,7 +235,7 @@ The suite starts WordPress Playground (WordPress in WebAssembly, so Node 20+ is 
 
 `.github/workflows/ci.yml` runs on pushes to `main` and `develop`, on pull requests to `main`, and on manual dispatch. It calls the reusable `quality-checks.yml` workflow, which starts a MySQL 8.0 service, installs the WordPress Test Suite, then runs `php -l integration-guide.php`, `composer phpcs`, `composer phpstan`, the `unit` suite and the `integration` suite. The jobs are:
 
-- Quality checks on PHP 8.2 (this job also collects coverage and uploads it to Codecov without failing the build, `codecov.yml` sets the project target at 96.31% and ignores `tests/` and `vendor/`), PHP 8.3 and PHP 8.4, all against the latest WordPress
+- Quality checks on PHP 8.2 (this job also collects coverage and uploads it to Codecov without failing the build, `codecov.yml` sets the project target at 96.26% and ignores `tests/` and `vendor/`), PHP 8.3 and PHP 8.4, all against the latest WordPress
 - Quality checks on PHP 8.2 against WordPress 6.5, the oldest supported version
 - Quality checks on PHP 8.2 in WordPress multisite mode
 - A security audit job that runs `composer audit`
