@@ -17,10 +17,3 @@ parameters:
         - tests/phpstan/wp-test-suite-stubs.php
     # Every ignore must match something, so a fixed problem cannot leave a stale pattern behind.
     reportUnmatchedIgnoredErrors: true
-    ignoreErrors:
-        - '#Right side of && is always true#'
-        - '#does not accept non-empty-array#'
-        - '#of function esc_html expects string#'
-        - '#Cannot cast .* to string#'
-        - '#Parameter .* expects string, .* given#'
-        - '#Parameter .* expects callable#'
