@@ -349,41 +349,42 @@
         },
         {
           "id": "idempotent-and-late-registration",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "document-registration-window-in-phpdoc",
-          "status": "not-started",
+          "status": "completed",
           "notes": "PHPDoc of register_plugin() states the supported window. The long-form text is Phase 5 (IMPLEMENTATION.md, Registration timing)."
         },
         {
           "id": "exact-hook-suffix-match",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "wakeup-throws",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "action-button-contract",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "package-version-bump-and-sync-test",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Set PACKAGE_VERSION to 1.2.2 (newest released CHANGELOG heading). The test asserts equality with the first released ## [x.y.z] heading, skipping [Unreleased]. Phase 7 bumps to 1.3.0 together with the CHANGELOG move."
         },
         {
           "id": "css-container-query",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "Already done by PR #51 (UX, #49), which removed the dead @container rule and the container-type declaration. A guard test (test_stylesheet_has_no_dead_container_query) keeps it from returning."
         },
         {
           "id": "changelog-unreleased-entry",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "verify",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "review",
@@ -398,6 +399,18 @@
         {
           "date": "2026-10-15",
           "summary": "Branch 48-phase-4-hardening created from main at e619288 with a plain git checkout -b (no gh issue develop link, which auto-closes #48 on merge)."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Main moved while the phase was in progress: PR #51 (UX design system, #49) was merged (456f647). The branch was rebased onto it. #51 fixed the dead @container rule, but left the dashboard count at count( $this->plugins ), which after Phase 3 disagrees with the visible cards; fixed here with a test."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Red before green: with the new tests and the old src/ there were 11 failures out of 109 tests (idempotence, late registration x2, late-registration notice, no-notice window, hook-suffix look-alikes, translated parent title, unserialize, package version vs changelog, event parameter, unique button ids, visible count). After the change: 110 tests, 381 assertions, all green; composer phpcs and composer phpstan clean. Mutation check of the new behaviour: 14 of 14 mutants killed (scratchpad script mutation_p4.py)."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Decisions: a registration after admin_menu has finished is still stored and its menu is built immediately, but it raises _doing_it_wrong() (core already built the menu). The hook suffix check reads the prefix core stored in $admin_page_hooks (falling back to sanitize_title of the translated title) instead of assuming English. Button ids keep the documented form for the first button and get -2, -3 for repeats within one dashboard render. Slug sanitisation was NOT added: a slug is a menu slug and WordPress itself accepts arbitrary strings; the allowed characters are documented in Phase 5 instead. Consumer risk to check in Phase 7: a consumer test suite that fires admin_menu and then registers a plugin now sees the notice (WP_UnitTestCase fails on unexpected _doing_it_wrong)."
         }
       ]
     },
