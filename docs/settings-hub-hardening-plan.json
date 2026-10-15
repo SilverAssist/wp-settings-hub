@@ -393,11 +393,69 @@
       "log": []
     },
     {
+      "id": "phase-5a-independent-docs",
+      "title": "Phase 5a: Documentation that does not depend on Phase 3 or 4",
+      "kind": "phase",
+      "status": "in-progress",
+      "notes": "Branch 48-phase-5a-docs, stacked on 48-phase-3-capability. Split out of Phase 5 so it could be written in parallel with Phase 3. Written by a Sonnet subagent in a git worktree, then checked and corrected here; the three conflicts with the Phase 3 docs were small and were resolved by combining both sides. Once Phase 3 is merged, move this branch onto main with `git rebase --onto main 48-phase-3-capability 48-phase-5a-docs`.",
+      "findings": [
+        "Part of the work was a decision, not a fix: the subagent removed the Packagist badges, the plain `composer require` and the \"(private repository)\" heading because the package and the standards repos are public and the package is on Packagist. The original install text was restored; the owner has to decide the install story (see questions in the PR).",
+        "The docs were checked against the code: PHPUnit 9.6, the CI jobs, composer scripts, the release workflow, plugin_file resolution, tabs default, tab_title and name semantics. Anchors and links resolve (0 problems) and the fences are balanced.",
+        "Merge conflicts with the Phase 3 docs appeared in README.md, IMPLEMENTATION.md and integration-guide.php, which is the cost of writing documentation in parallel with the code that changes it."
+      ],
+      "tasks": [
+        {
+          "id": "readme-behaviour-independent",
+          "status": "completed",
+          "notes": "Development pointer, PHPUnit 9.6, unsupported test claims removed, absolute links, broken anchor, version example, SVG icon wording, tabs default, tab_title/name/version semantics, plugin_file resolution, multisite sentence, undocumented CSS helper classes. Install story left as it was."
+        },
+        {
+          "id": "contributing-md",
+          "status": "completed",
+          "notes": "Rewritten: prerequisites, local setup, required test suite and MySQL, CI jobs, hooks, ruleset, commit convention, project layout, canonical release checklist."
+        },
+        {
+          "id": "copilot-instructions-pointer-file",
+          "status": "completed",
+          "notes": "43 lines, conventions and links only."
+        },
+        {
+          "id": "implementation-md-behaviour-independent",
+          "status": "completed",
+          "notes": "PHP 8.2+, embedded changelog and footer removed, generic WordPress advice trimmed, plugin_file in examples, ^1.2, no Packagist link."
+        },
+        {
+          "id": "integration-guide-plugin-file",
+          "status": "completed",
+          "notes": "plugin_file added; undocumented helper classes removed."
+        },
+        {
+          "id": "verify",
+          "status": "completed",
+          "notes": "php -l, 0 broken links or anchors, balanced fences, no stale tool references."
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
+      ],
+      "log": [
+        {
+          "date": "2026-10-15",
+          "summary": "First attempt failed on a session limit before editing anything. Second attempt produced one commit; its report was checked against the code, the install-story change was reverted, a coverage-script description was softened and the Phase 3 conflicts were resolved."
+        }
+      ]
+    },
+    {
       "id": "phase-5-docs",
       "title": "Phase 5: Documentation realignment",
       "kind": "phase",
       "status": "not-started",
-      "notes": "Branch: 48-phase-5-docs. Apply the canonical-home table and the correction list in the plan. Leave historical CHANGELOG entries alone. Review with core-review --budget thorough until it reports nothing new. Additional owners from the plan verification: README absolute links (release zip lacks IMPLEMENTATION.md, CONTRIBUTING.md and integration-guide.php), README Development pointer, PHPUnit 9.6, action contract, tab_title/name/version semantics, multisite scope; IMPLEMENTATION.md Registration timing, plugin_file in examples, ^1.2, one update-button example; CONTRIBUTING layout, skip-db-create, composer test vs phpunit, spelling; .packagist.yml; SettingsHub.php docblock wording.",
+      "notes": "Branch: 48-phase-5-docs. Apply the canonical-home table and the correction list in the plan. Leave historical CHANGELOG entries alone. Review with core-review --budget thorough until it reports nothing new. Additional owners from the plan verification: README absolute links (release zip lacks IMPLEMENTATION.md, CONTRIBUTING.md and integration-guide.php), README Development pointer, PHPUnit 9.6, action contract, tab_title/name/version semantics, multisite scope; IMPLEMENTATION.md Registration timing, plugin_file in examples, ^1.2, one update-button example; CONTRIBUTING layout, skip-db-create, composer test vs phpunit, spelling; .packagist.yml; SettingsHub.php docblock wording. Phase 5a (a separate work item) already did the behaviour-independent documentation; what remains here is the documentation of Phase 4 behaviour (registration window, hook suffixes, action-button contract, hooks and filters table), the README install-story decision, the composer.json wording, the slevomat dependency, the text-domain statement and .packagist.yml.",
       "findings": [
         "IMPLEMENTATION.md requires PHP 8.3+ (:40, :95, :1147) while composer.json requires ^8.2; it embeds a stale changelog and version footer (:1322-1344) and claims built-in update support (:33).",
         "'Settings > Silver Assist' in composer.json:3, the class docblock and copilot-instructions.md contradicts the top-level menu at position 80.",
@@ -599,6 +657,10 @@
     {
       "date": "2026-10-15",
       "summary": "Phase 2 merged (PR #53). Phase 3 implemented on 48-phase-3-capability; the independent docs track (5a) failed on a session limit before editing anything and is pending."
+    },
+    {
+      "date": "2026-10-15",
+      "summary": "Phase 5a split out of Phase 5 and done in parallel with Phase 3. Open question for the owner: public repos and a Packagist listing versus the documented vcs-with-token install story."
     }
   ]
 }

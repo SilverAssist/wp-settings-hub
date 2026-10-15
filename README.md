@@ -1,6 +1,8 @@
 # Silver Assist Settings Hub
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/silverassist/wp-settings-hub.svg?style=flat-square)](https://packagist.org/packages/silverassist/wp-settings-hub)
 [![Software License](https://img.shields.io/badge/license-PolyForm--Noncommercial--1.0.0-blue.svg?style=flat-square)](LICENSE.md)
+[![Total Downloads](https://img.shields.io/packagist/dt/silverassist/wp-settings-hub.svg?style=flat-square)](https://packagist.org/packages/silverassist/wp-settings-hub)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-8892BF.svg?style=flat-square)](https://php.net/)
 [![WordPress](https://img.shields.io/badge/wordpress-%3E%3D6.5-21759B.svg?style=flat-square)](https://wordpress.org/)
 
@@ -27,12 +29,20 @@ The hub registers its menu on `admin_menu` only. It supports single-site install
 
 ## Installation
 
-Silver Assist packages are installed from their GitHub repositories with a Composer
-`vcs` repository. Those repositories can require authentication, so always configure
-a token.
+Install via Composer:
+
+```bash
+composer require silverassist/wp-settings-hub
+```
+
+## Installing via Composer (private repository)
+
+SilverAssist packages are installed from their GitHub repositories with a Composer
+`vcs` repository, not from Packagist.org. Those repositories can require
+authentication, so always configure a token.
 
 1. **Declare the repository** in your project's root `composer.json`. Composer only
-   reads `repositories` from the root package, so every Silver Assist package your
+   reads `repositories` from the root package, so every SilverAssist package your
    project needs must be listed there, including transitive ones:
 
    ```json
@@ -45,9 +55,6 @@ a token.
      }
    }
    ```
-
-   With the repository declared, `composer require silverassist/wp-settings-hub:^1.2`
-   adds the same constraint from the command line.
 
 2. **Authenticate** with a GitHub token that can read the repository:
    - Locally: `composer config --global github-oauth.github.com <token>`
@@ -66,7 +73,7 @@ a token.
    `composer update --lock` after adding `repositories`, so the lock file's
    `content-hash` matches `composer.json`.
 
-This repository's own `composer.json` declares `vcs` repositories for its Silver Assist development dependencies (`coding-standards`, `wp-coding-standards`), so contributors and CI need the same token. See [CONTRIBUTING.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md).
+This repository's own `composer.json` declares `vcs` repositories for its SilverAssist development dependencies (`coding-standards`, `wp-coding-standards`), so contributors and CI need the same token.
 
 ### Troubleshooting
 

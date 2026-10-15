@@ -449,6 +449,8 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 
 ### Phase 5: Documentation realignment
 
+> **Split:** the behaviour-independent part was done early as Phase 5a (its own PR, written in parallel with Phase 3): the README Development pointer, PHPUnit 9.6, absolute links, the `tab_title`/`name`/`version` semantics, `plugin_file` resolution, the multisite sentence, CONTRIBUTING, the copilot pointer file, the generic trimming of IMPLEMENTATION.md and the `integration-guide.php` examples. What is left below is the documentation of Phase 4 behaviour and the open decisions (install story, `composer.json` wording, slevomat, text domain, `.packagist.yml`).
+
 **Objective:** no documentation claim contradicts the code, and each topic has one canonical home.
 
 - [ ] Apply the canonical-home table and every correction listed under "Documentation (Phase 5)".

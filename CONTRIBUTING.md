@@ -13,7 +13,7 @@ Thank you for your interest in contributing to the Silver Assist Settings Hub pa
 - `svn` (Subversion), used by the test-suite installer to download the WordPress test library
 - A running MySQL server, plus the `mysql` and `mysqladmin` client tools
 
-The `silverassist/coding-standards` and `silverassist/wp-coding-standards` development dependencies are declared as Composer `vcs` repositories in `composer.json`, and Composer reads them from GitHub. Configure a token before the first `composer install`, as described in the [README installation steps](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md#installation) (for example `composer config --global github-oauth.github.com <token>`). CI passes the same token to `composer install` through the `COMPOSER_AUTH` secret. Never commit a token or an `auth.json`.
+The `silverassist/coding-standards` and `silverassist/wp-coding-standards` development dependencies are declared as Composer `vcs` repositories in `composer.json`, and Composer reads them from GitHub. Configure a token before the first `composer install`, as described in the [README installation steps](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md#installing-via-composer-private-repository) (for example `composer config --global github-oauth.github.com <token>`). CI passes the same token to `composer install` through the `COMPOSER_AUTH` secret. Never commit a token or an `auth.json`.
 
 ### Local Setup
 
@@ -205,7 +205,7 @@ vendor/bin/phpunit --testsuite integration
 # Run a specific test file
 vendor/bin/phpunit tests/Unit/SettingsHubTest.php
 
-# Write only the HTML coverage report
+# Run the tests and write the HTML coverage report
 composer test:coverage
 ```
 
