@@ -13,8 +13,10 @@ namespace SilverAssist\SettingsHub;
 /**
  * Centralized settings hub for all Silver Assist plugins.
  *
- * Provides a unified Settings > Silver Assist menu with auto-registration,
- * dynamic dashboard, and optional cross-plugin navigation tabs.
+ * Provides a top-level "Silver Assist" admin menu (position 80) with a Dashboard
+ * submenu, one submenu per registered plugin, a dashboard card for each of them,
+ * and optional cross-plugin navigation tabs. A plugin registers itself with
+ * register_plugin() and chooses the capability a user needs to see its page.
  *
  * @since 1.0.0
  */
@@ -94,9 +96,10 @@ final class SettingsHub {
 	/**
 	 * Plugin file path used to resolve asset URLs.
 	 *
-	 * Stored from the first plugin that registers with the hub.
-	 * Used to derive the vendor directory URL, avoiding the __DIR__ bug
-	 * when PHP autoloader loads the class from a single vendor directory.
+	 * Stored from the first registration that passes a non-empty plugin_file;
+	 * later values are ignored. Used to derive the vendor directory URL,
+	 * avoiding the __DIR__ bug when PHP autoloader loads the class from a
+	 * single vendor directory.
 	 *
 	 * @see https://github.com/SilverAssist/wp-github-updater/issues/17
 	 *
@@ -141,8 +144,9 @@ final class SettingsHub {
 	/**
 	 * Register a plugin with the settings hub.
 	 *
-	 * Automatically creates the parent "Silver Assist" menu if it doesn't exist,
-	 * and adds the plugin as a submenu item.
+	 * Automatically creates the top-level "Silver Assist" menu (and its Dashboard
+	 * submenu) if it doesn't exist, and adds the plugin as a submenu item. The hub
+	 * hooks `admin_menu` only, so nothing is added to the network or user admin.
 	 *
 	 * Call it before `admin_menu` fires or from an `admin_menu` callback, at any
 	 * priority: a plugin registered while `admin_menu` is running, even after the
@@ -150,19 +154,32 @@ final class SettingsHub {
 	 * `admin_menu` has finished is reported with `_doing_it_wrong()`, because core
 	 * has already built the menu for the request.
 	 *
+	 * Registering a slug that is already registered replaces its stored data, which
+	 * the dashboard card and the tabs use, and keeps its position. The submenu page
+	 * is added only once, so after `admin_menu` has run it keeps the title, label,
+	 * capability and callback of the first registration.
+	 *
 	 * @param string                                                      $slug     Unique plugin slug (e.g., 'post-revalidate').
 	 * @param string                                                      $name     Display name for the plugin.
 	 * @param callable                                                    $callback Function to render the plugin's settings page.
 	 * @param array<string, string|array<array<string, string|callable>>> $args {
 	 *     Optional arguments for the plugin.
 	 *
-	 *     @type string   $capability   Capability a user needs to see and open the plugin's page. Defaults to
-	 *                                  'manage_options'. An invalid value falls back to the default.
-	 *     @type string   $description  Plugin description.
-	 *     @type string   $version      Plugin version number.
-	 *     @type string   $tab_title    Custom tab title (defaults to plugin name).
-	 *     @type string   $plugin_file  Absolute path to the plugin's main file (for asset URL resolution).
-	 *     @type array[]  $actions      Array of action buttons with label, url/callback, and class.
+	 *     @type string   $capability   Capability a user needs to see and open the plugin's page (since 1.3.0).
+	 *                                  Defaults to 'manage_options'. An invalid value falls back to the default
+	 *                                  and triggers `_doing_it_wrong()`.
+	 *     @type string   $description  Plugin description shown on the dashboard card.
+	 *     @type string   $version      Plugin version number shown as a badge on the card and the page.
+	 *     @type string   $tab_title    Custom title for the tab and the sidebar submenu (defaults to plugin name).
+	 *     @type string   $plugin_file  Absolute path to the plugin's main file (for asset URL resolution). The
+	 *                                  first non-empty value from any registration is used and never stored in
+	 *                                  the plugin data. If the vendor directory cannot be resolved from it and
+	 *                                  the package is outside ABSPATH, the stylesheet is not enqueued.
+	 *     @type array[]  $actions      Array of action buttons on the card. Each has a `label` and either a `url`
+	 *                                  (rendered as a link) or a `callback` (rendered as a button), and an optional
+	 *                                  `class`. The callback receives the plugin slug while the dashboard renders
+	 *                                  and prints the JavaScript that becomes the click handler body, where `event`
+	 *                                  is the click event.
 	 * }
 	 */
 	public function register_plugin( string $slug, string $name, callable $callback, array $args = array() ): void {
@@ -228,10 +245,11 @@ final class SettingsHub {
 	/**
 	 * Register parent and submenu items.
 	 *
-	 * Called on admin_menu hook with priority 5 to ensure parent exists
-	 * before plugins register their submenus, and again by register_plugin()
-	 * for a plugin that registers once admin_menu has started. Safe to call
-	 * repeatedly: each page is added once.
+	 * Hooked to admin_menu at priority 5 by register_plugin(). It adds the parent
+	 * menu once and then adds the submenu page of every registered plugin itself,
+	 * so plugins do not call add_submenu_page(). register_plugin() also calls it
+	 * directly for a plugin that registers once admin_menu has started. Safe to
+	 * call repeatedly: the parent and each plugin page are added once.
 	 *
 	 * @internal
 	 */
@@ -249,6 +267,9 @@ final class SettingsHub {
 	/**
 	 * Enqueue dashboard styles on Silver Assist pages.
 	 *
+	 * Hooked to admin_enqueue_scripts once, by the first register_plugin() call.
+	 * Loads the stylesheet only when the hook suffix belongs to the hub's menu
+	 * (the Dashboard or a plugin page), and only when the asset URL can be resolved.
 	 * Uses a unique handle so WordPress deduplicates the enqueue
 	 * regardless of how many plugins include this package.
 	 *
@@ -278,9 +299,10 @@ final class SettingsHub {
 	/**
 	 * Whether a hook suffix belongs to a page of the hub's menu.
 	 *
-	 * Core names a submenu page `{sanitize_title( translated parent title )}_page_{slug}`
-	 * and stores that prefix in $admin_page_hooks, so the match reads the prefix from
-	 * there instead of assuming the English title. A plain substring check would also
+	 * Core names the Dashboard `toplevel_page_silver-assist`, and any other submenu page
+	 * `{sanitize_title( translated menu title )}_page_{slug}`, storing that prefix in
+	 * $admin_page_hooks. The match reads the prefix from there instead of assuming the
+	 * English title. A plain substring check would also
 	 * accept look-alikes such as settings_page_silver-assist-security.
 	 *
 	 * @param string $hook_suffix The current admin page hook suffix.
@@ -359,7 +381,8 @@ final class SettingsHub {
 	/**
 	 * Register the parent "Silver Assist" menu.
 	 *
-	 * Creates a top-level menu with a dashboard submenu.
+	 * Creates a top-level menu at position 80 with a Dashboard submenu, both gated
+	 * by the capability from the silverassist_settings_hub_dashboard_capability filter.
 	 */
 	private function register_parent_menu(): void {
 		// Register top-level menu.
@@ -386,6 +409,8 @@ final class SettingsHub {
 
 	/**
 	 * Register submenu items for all registered plugins.
+	 *
+	 * Skips slugs whose page was already added, so repeated passes never duplicate a row.
 	 */
 	private function register_submenus(): void {
 		foreach ( $this->plugins as $plugin ) {
@@ -466,7 +491,8 @@ final class SettingsHub {
 		 * Filters the capability required to see and open a plugin's Settings Hub page.
 		 *
 		 * The capability gates the plugin's submenu item, dashboard card, tab and page.
-		 * An invalid return value falls back to manage_options.
+		 * It starts from the `capability` the plugin passed to register_plugin(), or
+		 * manage_options. An invalid return value falls back to manage_options.
 		 *
 		 * @since 1.3.0
 		 *
@@ -490,6 +516,8 @@ final class SettingsHub {
 	private function get_dashboard_capability(): string {
 		/**
 		 * Filters the capability required for the Silver Assist menu and its Dashboard.
+		 *
+		 * The Dashboard tab is hidden from users who lack it.
 		 *
 		 * Plugins registered with a lower capability stay reachable without it: WordPress
 		 * links the top-level menu to the first submenu page the user may open. An invalid
@@ -642,14 +670,15 @@ final class SettingsHub {
 						}
 					}
 					/**
-					 * Fires after the default Configure button in a plugin card.
+					 * Fires after the Configure button and the buttons from `actions` in a plugin card.
 					 *
 					 * Allows plugins to add custom action buttons to their dashboard card.
+					 * It fires once per visible plugin card, inside the card's actions element.
 					 *
 					 * @since 1.1.0
 					 *
-					 * @param string $slug   The plugin slug.
-					 * @param array  $plugin The plugin data array.
+					 * @param string               $slug   The plugin slug.
+					 * @param array<string, mixed> $plugin The stored plugin data (without plugin_file).
 					 */
 					do_action( 'silverassist_settings_hub_plugin_actions', $plugin['slug'], $plugin );
 					?>

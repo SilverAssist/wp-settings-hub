@@ -11,13 +11,14 @@ Based on real-world implementations and tested patterns from Silver Assist plugi
 1. [Overview](#overview)
 2. [Installation](#installation)
 3. [Basic Integration Pattern](#basic-integration-pattern)
-4. [Common Integration Errors](#common-integration-errors)
-5. [Complete Implementation Examples](#complete-implementation-examples)
-6. [Update Button Implementation](#update-button-implementation)
-7. [Asset Loading Configuration](#asset-loading-configuration)
-8. [Security & Permissions](#security--permissions)
-9. [Testing Checklist](#testing-checklist)
-10. [Best Practices](#best-practices)
+4. [Registration Timing](#registration-timing)
+5. [Common Integration Errors](#common-integration-errors)
+6. [Complete Implementation Examples](#complete-implementation-examples)
+7. [Update Button Implementation](#update-button-implementation)
+8. [Asset Loading Configuration](#asset-loading-configuration)
+9. [Security & Permissions](#security--permissions)
+10. [Testing Checklist](#testing-checklist)
+11. [Best Practices](#best-practices)
 
 ---
 
@@ -149,7 +150,7 @@ class Plugin {
     }
 
     private function __construct() {
-        // CRITICAL: Use priority 4 to register BEFORE Settings Hub (priority 5)
+        // Priority 4 runs before the hub's own admin_menu pass (priority 5). See "Registration Timing".
         add_action( 'admin_menu', [ $this, 'register_with_hub' ], 4 );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
     }
@@ -200,10 +201,11 @@ class Plugin {
     }
 
     public function enqueue_admin_assets( string $hook_suffix ): void {
-        // Define possible hook suffixes (standalone and hub contexts)
+        // Ask WordPress for the hook suffixes of the standalone page and of the hub page.
+        // See the README, "Hook suffixes", for why they are not hard-coded.
         $allowed_hooks = [
-            'settings_page_your-plugin',       // Standalone menu
-            'silver-assist_page_your-plugin',  // Settings Hub submenu
+            get_plugin_page_hookname( 'your-plugin', 'options-general.php' ), // Standalone menu
+            get_plugin_page_hookname( 'your-plugin', 'silver-assist' ),       // Settings Hub submenu
         ];
 
         if ( ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
@@ -225,6 +227,27 @@ class Plugin {
 
 ---
 
+## Registration Timing
+
+`register_plugin()` has a supported window: **from the start of the request up to the end of the `admin_menu` action**.
+
+| When you call `register_plugin()` | What happens |
+| --- | --- |
+| Before `admin_menu` fires (on `plugins_loaded`, `init`, or while your plugin file loads) | Supported. The hub stores the plugin and builds its submenu on its own `admin_menu` pass, priority 5. |
+| From an `admin_menu` callback, at any priority | Supported since 1.3.0. The hub builds the submenu inside the `register_plugin()` call, even when its priority 5 pass has already run. Before 1.3.0 only a priority lower than 5 worked. |
+| After `admin_menu` has finished (for example on `admin_init`, which wp-admin fires after `admin_menu`) | Reported with `_doing_it_wrong()`, which prints a notice when `WP_DEBUG` is on. The plugin is stored, so `is_plugin_registered()` returns `true`, but WordPress has already built the menu for the request. The hub still hands the page to `add_submenu_page()`, and the page may be missing from the menu or refused. |
+
+On a request where `admin_menu` never fires (the front end, `admin-ajax.php`, a REST request), `register_plugin()` only stores the plugin and raises no notice.
+
+Things worth knowing:
+
+- **The menu registration is idempotent.** The hub adds each page once per slug. Firing `admin_menu` again, or registering the same slug twice, never duplicates a menu row. A second registration of a slug replaces the stored data (dashboard card, tab label, `get_plugins()`). If the hub has already built that slug's submenu page, the page itself keeps the first registration's callback, title and capability for the rest of the request, so register each slug once.
+- **Priority 4 on `admin_menu` stays the safest `admin_menu` priority.** Before 1.3.0 the hub built its menus once, at priority 5, so every registration that happens before that pass also works with older hub versions (`plugins_loaded`, `init`, or an `admin_menu` priority from 0 to 4), while priorities above 5 only work from 1.3.0 (priority 5 itself depends on whether your callback runs before the hub's). This matters because several Silver Assist plugins can share one site: the first plugin whose autoloader loads `SettingsHub` defines the class for all of them, so the copy that runs can be older than the version your plugin requires.
+- **The `capability` is applied when the menu is built.** The value you pass is validated when you call `register_plugin()`, but WordPress receives it, together with the result of the `silverassist_settings_hub_plugin_capability` filter, when the hub builds the submenu. Add those filters before `admin_menu`. See the README, "Restrict a Plugin to a Capability".
+- **Hook suffixes are a separate topic.** The README, "Hook suffixes", owns the suffix table and the way to get a suffix from WordPress.
+
+---
+
 ## Common Integration Errors
 
 Based on real-world implementations, these are the **most common errors** and their solutions:
@@ -235,13 +258,13 @@ Based on real-world implementations, these are the **most common errors** and th
 
 **Cause**: Plugin registers too late. Up to hub 1.2.x a registration after the hub's own `admin_menu` priority 5 pass (for example at the default priority 10) left the plugin without a submenu. From 1.3.0 a registration made while `admin_menu` is running gets its submenu immediately, so this symptom now means the plugin registers after `admin_menu` has finished (for example on `admin_init`), which is reported with `_doing_it_wrong()`, or that the user lacks the plugin's `capability`.
 
-**Solution**: Register on or before `admin_menu`. Priority **4** is still the safest choice, and the only one that works with hub versions before 1.3.0.
+**Solution**: Register on or before `admin_menu` (see [Registration Timing](#registration-timing)). Priority **4** is still the safest `admin_menu` priority: any registration before the hub's priority 5 pass (priorities 0 to 4, `plugins_loaded`, `init`) also works with hub versions before 1.3.0, while priorities above 5 only work from 1.3.0 (priority 5 itself depends on whether your callback runs before the hub's).
 
 ```php
-// ❌ WRONG - Default priority (10)
+// ❌ RISKY - Default priority (10): fine with hub 1.3.0+, but the submenu is lost with older hub versions
 add_action( 'admin_menu', [ $this, 'register_with_hub' ] );
 
-// ✅ CORRECT - Priority 4 (before Settings Hub)
+// ✅ SAFEST - Priority 4 (before the hub's own pass), works with every hub version
 add_action( 'admin_menu', [ $this, 'register_with_hub' ], 4 );
 ```
 
@@ -283,9 +306,9 @@ add_filter(
 
 **Symptom**: Styles and scripts don't load when plugin accessed via Settings Hub.
 
-**Cause**: Hook suffix is different between standalone (`settings_page_*`) and Hub (`silver-assist_page_*`) contexts.
+**Cause**: The hook suffix is different between the standalone page (`settings_page_{slug}`) and the Hub page (`{prefix}_page_{slug}`, where `{prefix}` follows the possibly translated "Silver Assist" menu title). A check against one literal string misses the other context, and a hard-coded `silver-assist_page_` misses a translated site.
 
-**Solution**: Check for **both** hook suffixes in asset enqueue function.
+**Solution**: Check for **both** hook suffixes in the asset enqueue function, and ask WordPress for them with `get_plugin_page_hookname()` instead of typing them. The README, "Hook suffixes", has the full table.
 
 ```php
 // ❌ WRONG - Only checks standalone context
@@ -296,11 +319,11 @@ public function enqueue_admin_assets( string $hook_suffix ): void {
     // Assets won't load when accessed via Settings Hub!
 }
 
-// ✅ CORRECT - Checks both contexts
+// ✅ CORRECT - Checks both contexts, with the suffixes WordPress built
 public function enqueue_admin_assets( string $hook_suffix ): void {
     $allowed_hooks = [
-        'settings_page_your-plugin',       // Standalone fallback
-        'silver-assist_page_your-plugin',  // Settings Hub submenu
+        get_plugin_page_hookname( 'your-plugin', 'options-general.php' ), // Standalone fallback
+        get_plugin_page_hookname( 'your-plugin', 'silver-assist' ),       // Settings Hub submenu
     ];
 
     if ( ! in_array( $hook_suffix, $allowed_hooks, true ) ) {
@@ -322,31 +345,39 @@ error_log( "Hook suffix: " . $hook_suffix );
 
 ### Error 4: Update Button Not Working
 
-**Symptom**: Clicking "Check Updates" button does nothing, no JavaScript executes.
+**Symptom**: Clicking the "Check Updates" button does nothing, and no JavaScript runs.
 
-**Cause**: Settings Hub expects action callbacks to **echo** JavaScript code, not **return** it.
+**Cause**: The hub renders a callback action as a `<button>` followed by an inline `<script>` block that attaches a click listener with `addEventListener`. It calls your callback while the Dashboard renders, and whatever the callback **prints** becomes the body of that listener:
 
-**Solution**: Change return type to `void` and use `echo`.
+```html
+<script type="text/javascript">
+    document.getElementById('sa-action-your-plugin-checkupdates').addEventListener('click', function(event) {
+        /* the output of your callback lands here */
+    });
+</script>
+```
+
+The hub throws the callback's **return value** away, so a string you return never reaches the page. A syntax error in what you print has the same visible effect: it breaks the whole `<script>` block, so the listener is never attached. The same block is what makes `event` available to your code.
+
+**Solution**: Print the JavaScript with `echo`, declare the callback as returning `void`, and escape what you interpolate (the hub does not).
 
 ```php
-// ❌ WRONG - Returns JavaScript (doesn't execute)
+// ❌ WRONG - Returns JavaScript (the hub ignores the return value)
 public function render_update_check( string $plugin_slug = '' ): string {
-    wp_enqueue_script( 'your-plugin-update', ... );
-    wp_localize_script( ... );
-    
-    return "checkForUpdates(); return false;";  // ❌ Not executed
+    // Enqueue and localize your update script here.
+
+    return 'checkForUpdates();';  // ❌ Never reaches the page
 }
 
-// ✅ CORRECT - Echoes JavaScript (executes immediately)
+// ✅ CORRECT - Echoes JavaScript (it becomes the click handler's body)
 public function render_update_check( string $plugin_slug = '' ): void {
-    wp_enqueue_script( 'your-plugin-update', ... );
-    wp_localize_script( ... );
-    
-    echo "checkForUpdates(); return false;";  // ✅ Executed
+    // Enqueue and localize your update script here.
+
+    echo 'checkForUpdates();';  // ✅ Runs on click
 }
 ```
 
-**Why this matters**: Settings Hub renders action buttons with `onclick` attributes. When the button is clicked, WordPress evaluates the callback's output. If you return the string, it goes to the output buffer but doesn't execute. If you echo it, it becomes part of the `onclick` attribute value.
+**Why this matters**: nothing is evaluated at click time from a returned value. The callback runs once, while the page renders, and only its printed output is part of the page. See the README, "Action button structure", for the full contract (`event`, the slug argument, button ids, `url` taking precedence over `callback`).
 
 ---
 
@@ -369,6 +400,7 @@ class Simple_Plugin {
     private const SLUG = 'simple-plugin';
 
     public function __construct() {
+        // Priority 4: before the hub's own admin_menu pass. See "Registration Timing".
         add_action( 'admin_menu', [ $this, 'register_with_hub' ], 4 );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
@@ -467,8 +499,8 @@ class Simple_Plugin {
 
     public function enqueue_assets( string $hook_suffix ): void {
         $allowed = [
-            'settings_page_' . self::SLUG,
-            'silver-assist_page_' . self::SLUG,
+            get_plugin_page_hookname( self::SLUG, 'options-general.php' ), // Standalone fallback
+            get_plugin_page_hookname( self::SLUG, 'silver-assist' ),       // Settings Hub submenu
         ];
 
         if ( ! in_array( $hook_suffix, $allowed, true ) ) {
@@ -508,6 +540,7 @@ class Advanced_Plugin {
 
     public function __construct() {
         add_action( 'plugins_loaded', [ $this, 'init_updater' ] );
+        // Priority 4: before the hub's own admin_menu pass. See "Registration Timing".
         add_action( 'admin_menu', [ $this, 'register_with_hub' ], 4 );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
         add_action( 'wp_ajax_advanced_plugin_check_updates', [ $this, 'ajax_check_updates' ] );
@@ -570,7 +603,7 @@ class Advanced_Plugin {
 
     /**
      * Render update check button script
-     * ⚠️ CRITICAL: Must ECHO JavaScript, not RETURN it
+     * ⚠️ CRITICAL: Must ECHO JavaScript, not RETURN it (see Error 4)
      */
     public function render_update_check( string $plugin_slug = '' ): void {
         wp_enqueue_script(
@@ -597,8 +630,8 @@ class Advanced_Plugin {
             ]
         );
 
-        // ⚠️ CRITICAL: Echo, don't return
-        echo 'advancedPluginCheckUpdates(); return false;';
+        // ⚠️ CRITICAL: Echo, don't return. The output becomes the body of the click handler.
+        echo 'advancedPluginCheckUpdates();';
     }
 
     /**
@@ -683,8 +716,8 @@ class Advanced_Plugin {
 
     public function enqueue_assets( string $hook_suffix ): void {
         $allowed = [
-            'settings_page_' . self::SLUG,
-            'silver-assist_page_' . self::SLUG,
+            get_plugin_page_hookname( self::SLUG, 'options-general.php' ), // Standalone fallback
+            get_plugin_page_hookname( self::SLUG, 'silver-assist' ),       // Settings Hub submenu
         ];
 
         if ( ! in_array( $hook_suffix, $allowed, true ) ) {
@@ -707,7 +740,7 @@ class Advanced_Plugin {
 
 ### JavaScript Implementation (`assets/js/update-check.js`)
 
-Complete, production-ready update check script with WordPress notifications:
+The script that goes with "Example 2" above (same `advancedPluginUpdateData` object and `advanced_plugin_check_updates` AJAX action):
 
 ```javascript
 /**
@@ -766,35 +799,35 @@ Complete, production-ready update check script with WordPress notifications:
      * Check for plugin updates
      * Called by Settings Hub action button
      */
-    window.yourPluginCheckUpdates = function() {
-        showAdminNotice(yourPluginUpdateData.strings.checking, "info");
+    window.advancedPluginCheckUpdates = function() {
+        showAdminNotice(advancedPluginUpdateData.strings.checking, "info");
 
         $.ajax({
-            url: yourPluginUpdateData.ajaxurl,
+            url: advancedPluginUpdateData.ajaxurl,
             type: "POST",
             data: {
-                action: "your_plugin_check_updates",
-                nonce: yourPluginUpdateData.nonce
+                action: "advanced_plugin_check_updates",
+                nonce: advancedPluginUpdateData.nonce
             },
             success: function(response) {
                 if (response.success && response.data) {
                     if (response.data.update_available) {
-                        showAdminNotice(yourPluginUpdateData.strings.available, "success");
+                        showAdminNotice(advancedPluginUpdateData.strings.available, "success");
                         setTimeout(function() {
-                            window.location.href = yourPluginUpdateData.updateUrl;
+                            window.location.href = advancedPluginUpdateData.updateUrl;
                         }, 2000);
                     } else {
-                        showAdminNotice(yourPluginUpdateData.strings.upToDate, "success");
+                        showAdminNotice(advancedPluginUpdateData.strings.upToDate, "success");
                     }
                 } else {
                     const errorMsg = response.data && response.data.message
                         ? response.data.message
-                        : yourPluginUpdateData.strings.error;
+                        : advancedPluginUpdateData.strings.error;
                     showAdminNotice(errorMsg, "error");
                 }
             },
             error: function(xhr, status, error) {
-                showAdminNotice(yourPluginUpdateData.strings.error, "error");
+                showAdminNotice(advancedPluginUpdateData.strings.error, "error");
                 console.error("Update check failed:", error);
             }
         });
@@ -915,6 +948,7 @@ public function render_settings_page(): void {
 ### Pre-Deployment Testing
 
 - [ ] **Settings Hub Active**
+  - [ ] Plugin registers on or before `admin_menu`: no `_doing_it_wrong()` notice with `WP_DEBUG` on
   - [ ] Submenu appears under "Silver Assist" menu
   - [ ] Plugin name and description display correctly
   - [ ] Version number shows on dashboard card
@@ -989,9 +1023,9 @@ public function render_settings_page(): void {
 
 ### Critical Requirements (Must Follow)
 
-1. **Hook Priority 4**: ALWAYS use priority 4 for `admin_menu` hook
+1. **Registration Timing**: ALWAYS register on or before `admin_menu`. Priority 4 on `admin_menu` is the safest `admin_menu` priority, because it also works with hub versions before 1.3.0 (see [Registration Timing](#registration-timing))
 2. **Capability Parameter**: optional (1.3.0+). Omit it for administrator-only pages and pass `capability` only to open a page to a lower role
-3. **Multiple Hook Suffixes**: ALWAYS check for both `settings_page_*` and `silver-assist_page_*`
+3. **Multiple Hook Suffixes**: ALWAYS check for both the standalone and the Hub page, and get the suffixes from `get_plugin_page_hookname()` instead of typing them (see the README, "Hook suffixes")
 4. **Echo vs Return**: ALWAYS echo JavaScript in action callbacks, never return
 5. **Class Existence**: ALWAYS check `class_exists( SettingsHub::class )` before using
 6. **Fallback Menu**: ALWAYS provide standalone menu for when Hub unavailable
@@ -1043,8 +1077,8 @@ wp_enqueue_style( 'style', $url, [], YOUR_PLUGIN_VERSION );
 public function enqueue_assets( string $hook_suffix ): void {
     // Early return if not our page
     $allowed = [
-        'settings_page_your-plugin',
-        'silver-assist_page_your-plugin',
+        get_plugin_page_hookname( 'your-plugin', 'options-general.php' ),
+        get_plugin_page_hookname( 'your-plugin', 'silver-assist' ),
     ];
 
     if ( ! in_array( $hook_suffix, $allowed, true ) ) {

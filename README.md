@@ -103,6 +103,47 @@ WordPress Admin
 **Dashboard URL**: `admin.php?page=silver-assist`  
 **Plugin URLs**: `admin.php?page={your-plugin-slug}`
 
+### Hook suffixes
+
+WordPress passes a hook suffix to `admin_enqueue_scripts` and uses it to name the `load-` and page hooks. The suffix of a hub page depends on where the page lives:
+
+| Page | Hook suffix | Notes |
+| --- | --- | --- |
+| Hub Dashboard | `toplevel_page_silver-assist` | Fixed. |
+| A plugin registered with the hub | `{prefix}_page_{slug}` | `{prefix}` is the parent menu title that WordPress ran through `sanitize_title()` when the hub added the menu. It is `silver-assist` only while the string "Silver Assist" is untranslated. Under a translation, for example "Plata Asistencia", it becomes `plata-asistencia`. |
+| A plugin's own standalone page (the fallback you add with `add_options_page()`) | `settings_page_{slug}` | Set by WordPress for the Settings menu. |
+
+Do not hard-code the prefix. Ask WordPress for the suffix, after `admin_menu` has run (`admin_enqueue_scripts` is late enough):
+
+```php
+public function enqueue_admin_assets( string $hook_suffix ): void {
+    // Standalone fallback page.
+    $allowed = array( get_plugin_page_hookname( 'my-plugin', 'options-general.php' ) );
+
+    // Hub page. The parent slug is the one SettingsHub::get_parent_slug() returns.
+    $allowed[] = get_plugin_page_hookname( 'my-plugin', 'silver-assist' );
+
+    if ( ! in_array( $hook_suffix, $allowed, true ) ) {
+        return;
+    }
+
+    // Enqueue your assets here.
+}
+```
+
+`get_plugin_page_hookname( $slug, $parent_slug )` reads the prefix WordPress stored for the parent menu, so it follows the translated title. The hub does not return the suffix of the pages it adds. If you add your own page with `add_submenu_page()`, `add_options_page()` or `add_menu_page()`, the value that function returns is the hook suffix of that page. `add_submenu_page()` and `add_options_page()` return `false` instead when the current user lacks the capability you passed, while `add_menu_page()` always returns the suffix.
+
+The hub itself loads its stylesheet on the Dashboard suffix and on the `{prefix}_page_` suffixes of its own menu. It does not load it on look-alikes such as `settings_page_silver-assist-security`.
+
+### Slugs
+
+The slug becomes the menu slug, the `?page=` value in every URL the hub builds, the tail of the hook suffix, and the base of the button ids. The hub does not sanitise it. Use only lowercase letters, digits, hyphens and underscores (`my-plugin`, `my_plugin_2`):
+
+- The hub builds `admin.php?page={slug}` without encoding the slug, so characters that split or rewrite a query string (`&`, `#`, and `%` followed by two hex digits) change the `?page=` value the link carries.
+- `add_submenu_page()` passes the slug through `plugin_basename()`, which turns backslashes into slashes, trims slashes at both ends and strips a leading plugins directory path, so a slug with `/` or `\` may not match the `?page=` value.
+- WordPress removes every `.php` from a slug when it builds the hook suffix, so `reports.php` and `reports` get the same suffix.
+- `sanitize_key()` lowercases the slug and drops other characters when the hub builds a button id, so two slugs that differ only in case or punctuation can produce the same button id. The second one gets a numeric suffix, see [Action button structure](#action-button-structure).
+
 ## Quick Start
 
 ### 1. Basic Integration
@@ -129,6 +170,8 @@ $hub->register_plugin(
 ```
 
 **Note:** The `plugin_file` parameter is optional but recommended. It lets the hub find its stylesheet under your plugin's `vendor/` directory. See [Asset URL resolution](#asset-url-resolution) for the exact rules.
+
+**Timing:** call `register_plugin()` before `admin_menu` fires, or from an `admin_menu` callback. A call after `admin_menu` has finished is reported with `_doing_it_wrong()`. [IMPLEMENTATION.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md#registration-timing) has the full rule.
 
 ### 2. Render Your Settings Page
 
@@ -238,6 +281,8 @@ $hub->register_plugin(
 );
 ```
 
+A callback action prints JavaScript that becomes the body of the button's click handler. The exact contract is in [Action button structure](#action-button-structure).
+
 **Integration with wp-github-updater**:
 
 If you're using the `silverassist/wp-github-updater` package, you can add a "Check Updates" button:
@@ -305,10 +350,10 @@ class My_Plugin {
             nonce: '<?php echo esc_js( wp_create_nonce( 'my_plugin_updates_nonce' ) ); ?>'
         }).done(function(response) {
             if (response.success && response.data.update_available) {
-                alert('<?php esc_html_e( 'Update available!', 'my-plugin' ); ?>');
+                alert('<?php echo esc_js( __( 'Update available!', 'my-plugin' ) ); ?>');
                 window.location.href = '<?php echo esc_js( admin_url( 'update-core.php' ) ); ?>';
             } else {
-                alert('<?php esc_html_e( 'Already up to date', 'my-plugin' ); ?>');
+                alert('<?php echo esc_js( __( 'Already up to date', 'my-plugin' ) ); ?>');
             }
         });
         <?php
@@ -346,12 +391,9 @@ Rules:
 - The hub's check and the check inside your settings callback are separate. If you lower the capability here, make the callback check the same one (the examples in this repository check `manage_options`), or the page opens and then refuses the user.
 - If the plugin saves its settings through the Settings API, WordPress checks `manage_options` again on `options.php`. Lower it for your option group with the `option_page_capability_{$option_group}` filter, otherwise the page loads but saving ends in a 403.
 
-Two filters change the capabilities. They run when the hub builds the menu on `admin_menu` and again when it renders, so add them before `admin_menu`:
+The `capability` argument is validated when you call `register_plugin()`, but WordPress receives it when the hub builds the submenu, together with the result of the `silverassist_settings_hub_plugin_capability` filter. A filter added after the menu was built does not change the submenu item. It still applies when the dashboard cards, the tabs and the page render.
 
-| Filter | Arguments | Use |
-| --- | --- | --- |
-| `silverassist_settings_hub_plugin_capability` | `$capability`, `$slug`, `$plugin` | Change the capability of one plugin |
-| `silverassist_settings_hub_dashboard_capability` | `$capability` | Change the capability of the menu and the Dashboard (`manage_options` by default) |
+Two filters change the capabilities (see [Hooks and filters](#hooks-and-filters) for their arguments). They run when the hub builds the menu on `admin_menu` and again when it renders, so add them before `admin_menu`:
 
 ```php
 // Let editors open the Dashboard as well.
@@ -379,10 +421,7 @@ add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin
 }, 10, 2 );
 ```
 
-**Hook Parameters**:
-
-- `$slug` (string): The plugin slug
-- `$plugin` (array): The plugin data including name, callback, description, version, etc.
+The hook fires inside every dashboard card, after the Configure button and the buttons from the `actions` argument. Its arguments are listed in [Hooks and filters](#hooks-and-filters).
 
 ---
 
@@ -422,13 +461,23 @@ Register a plugin with the settings hub.
   - `capability` (string): Capability a user needs to see and open the plugin's page, `manage_options` by default (see [Restrict a Plugin to a Capability](#restrict-a-plugin-to-a-capability))
   - `actions` (array): Custom action buttons for the dashboard card
 
-**Action Button Structure**:
+#### Action button structure
 
 Each action in the `actions` array should be an associative array with:
-- `label` (string, required): Button text
-- `url` (string, optional): Direct link URL (for navigation)
-- `callback` (callable, optional): prints JavaScript for an interactive action. The callback runs while the dashboard renders, and the JavaScript it prints becomes the body of the button's click handler, where `event` is the click event. It receives the plugin slug. Button ids are `sa-action-{slug}-{label}` and get a numeric suffix when they repeat on the page
+- `label` (string, required): Button text. An action without a label is skipped
+- `url` (string, optional): Direct link URL (for navigation). It renders a link, and it wins when `callback` is also set
+- `callback` (callable, optional): prints JavaScript for an interactive action, see the contract below
 - `class` (string, optional): CSS classes for the button (default: `'button'`)
+
+An action with neither `url` nor a callable `callback` renders nothing. Actions appear only on the plugin's dashboard card, not on its settings page.
+
+The contract of a `callback` action:
+
+- The hub calls the callback while the dashboard renders, once per page view, with the plugin slug as its only argument (`function ( string $slug ): void`).
+- Whatever the callback prints must be JavaScript. It becomes the body of the button's click handler, `function ( event ) { ... }`, inside an inline `<script>` block, so `event` is the click event (`event.target` is the button) and a `return` statement ends the handler. Returning a string from the callback does nothing, only printed output is used.
+- The hub does not escape that output. Escape every value you print into it, for example `esc_js()` for a string literal and `wp_json_encode()` for data. A syntax error in the printed code breaks the whole `<script>` block, so the button does nothing.
+- The button id is `sa-action-` plus `sanitize_key( "{slug}-{label}" )`: lowercase, with spaces and other characters dropped, so the label "Run Now" on `my-plugin` gives `sa-action-my-plugin-runnow`. When the same id appears again on the page, the later buttons get `-2`, `-3` and so on, so the labels "Run Now" and "RunNow" never share an id.
+- The button also carries `data-plugin="{slug}"`.
 
 **Example with Actions**:
 
@@ -460,7 +509,7 @@ $hub->register_plugin(
 
 **Behaviour notes**:
 
-- Registering a slug that is already registered replaces its data silently. Nothing is merged with the earlier registration and no notice is raised.
+- Registering a slug that is already registered replaces the stored data (dashboard card, tab label, `get_plugins()`) silently. Nothing is merged with the earlier registration and no notice is raised. If the hub has already built that slug's submenu page, the page itself keeps the first registration's callback, title and capability for the rest of the request, so register each slug once.
 - `plugin_file` is not stored with the plugin data, so it does not appear in `get_plugins()`.
 
 #### Asset URL resolution
@@ -509,6 +558,16 @@ Get the parent menu slug.
 
 **Returns**: `string` - Parent menu slug (`'silver-assist'`)
 
+### Hooks and filters
+
+| Hook | Kind | Arguments | Since | Notes |
+| --- | --- | --- | --- | --- |
+| `admin_menu`, priority 5 | WordPress action the hub listens to | none | 1.0.0 | Adds the parent menu once, then the Dashboard and a submenu page for every registered plugin. The priority makes sure the parent menu exists before any submenu is added. Firing `admin_menu` more than once never duplicates a menu row. Since 1.3.0, `register_plugin()` also runs this step itself when `admin_menu` has already started, so a plugin registered from an `admin_menu` callback at any priority gets its submenu immediately. After `admin_menu` has finished it is reported with `_doing_it_wrong()`, see [Registration timing](https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md#registration-timing) |
+| `admin_enqueue_scripts`, default priority | WordPress action the hub listens to | `$hook_suffix` | 1.2.0 | Enqueues `assets/css/settings-hub.css` (handle `silverassist-settings-hub`) on the hub's own pages only, see [Hook suffixes](#hook-suffixes) |
+| `silverassist_settings_hub_plugin_actions` | Action the hub fires | `$slug` (string), `$plugin` (array) | 1.1.0 | Fires inside every dashboard card, after the Configure button and the buttons from the `actions` argument, so a plugin can print more buttons. `$plugin` is the stored plugin data (`name`, `slug`, `callback`, `capability` and the optional `description`, `version`, `tab_title` and `actions`). It never holds `plugin_file`. The hook runs at render time, so it can be added any time before the Dashboard renders |
+| `silverassist_settings_hub_plugin_capability` | Filter the hub applies | `$capability` (string), `$slug` (string), `$plugin` (array) | 1.3.0 | Changes the capability of one plugin. Runs when the hub builds the menu and again when it renders, so add it before `admin_menu`. An invalid return value falls back to `manage_options` |
+| `silverassist_settings_hub_dashboard_capability` | Filter the hub applies | `$capability` (string) | 1.3.0 | Changes the capability of the "Silver Assist" menu and its Dashboard, `manage_options` by default. Same timing and fallback as the filter above |
+
 ## Development
 
 Setup, running the tests, the quality checks, the commit convention and the release checklist are documented in [CONTRIBUTING.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md). UI changes follow the [design system](docs/design-system.md), which a Playwright suite checks against the stylesheet.
@@ -527,9 +586,11 @@ Plugins register themselves by calling `register_plugin()`. The hub automaticall
 3. Generates a dashboard card for the plugin
 4. Updates the tabs navigation (if enabled)
 
-### Hooks
+## Translations
 
-The hub uses WordPress's `admin_menu` hook with priority 5 to register menus early. This ensures the parent menu exists before any submenus are registered. A plugin that calls `register_plugin()` later while `admin_menu` is still running gets its submenu immediately, and a call after `admin_menu` has finished is reported with `_doing_it_wrong()`. Firing `admin_menu` more than once never duplicates a menu row.
+The hub's own strings use the text domain `silverassist-settings-hub`, but the package ships no translation files (no `.pot`, `.po` or `.mo`) and never calls `load_textdomain()` or `load_plugin_textdomain()`. It is not translatable yet: every hub string is shown in English unless the site supplies its own translation file, named `silverassist-settings-hub-{locale}.mo` and placed in `wp-content/languages/plugins/`, which WordPress's just-in-time loader reads.
+
+A translation of "Silver Assist" also changes the hook suffix of the hub's submenu pages, see [Hook suffixes](#hook-suffixes). Your own plugin keeps its own text domain for the strings you pass to `register_plugin()`.
 
 ## License
 

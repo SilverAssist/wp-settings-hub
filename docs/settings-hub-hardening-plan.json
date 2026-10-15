@@ -484,7 +484,7 @@
       "id": "phase-5-docs",
       "title": "Phase 5: Documentation realignment",
       "kind": "phase",
-      "status": "not-started",
+      "status": "in-progress",
       "notes": "Branch: 48-phase-5-docs. Apply the canonical-home table and the correction list in the plan. Leave historical CHANGELOG entries alone. Review with core-review --budget thorough until it reports nothing new. Additional owners from the plan verification: README absolute links (release zip lacks IMPLEMENTATION.md, CONTRIBUTING.md and integration-guide.php), README Development pointer, PHPUnit 9.6, action contract, tab_title/name/version semantics, multisite scope; IMPLEMENTATION.md Registration timing, plugin_file in examples, ^1.2, one update-button example; CONTRIBUTING layout, skip-db-create, composer test vs phpunit, spelling; .packagist.yml; SettingsHub.php docblock wording. Phase 5a (a separate work item) already did the behaviour-independent documentation; what remains here is the documentation of Phase 4 behaviour (registration window, hook suffixes, action-button contract, hooks and filters table), the README install-story decision, the composer.json wording, the slevomat dependency, the text-domain statement and .packagist.yml.",
       "findings": [
         "IMPLEMENTATION.md requires PHP 8.3+ (:40, :95, :1147) while composer.json requires ^8.2; it embeds a stale changelog and version footer (:1322-1344) and claims built-in update support (:33).",
@@ -500,53 +500,54 @@
       "tasks": [
         {
           "id": "branch",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "readme",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "implementation-md",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Verify (do not rewrite) the Error 2 section that Phase 3 writes."
         },
         {
           "id": "contributing-md",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "packagist-yml-and-contributing-details",
-          "status": "not-started"
+          "status": "blocked",
+          "notes": "Waiting for the owner decision on the install story (Packagist, vcs with token, or both). README install section and .packagist.yml were deliberately not touched."
         },
         {
           "id": "copilot-instructions-pointer-file",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "integration-guide-example",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "composer-description-and-slevomat",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "docblock-wording-and-hook-phpdoc",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Class docblock \"Settings > Silver Assist\" and the PHPDoc at src/SettingsHub.php:179-180."
         },
         {
           "id": "text-domain-wording",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "verify",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "review",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Use --budget thorough for this phase."
         },
         {
@@ -554,7 +555,12 @@
           "status": "not-started"
         }
       ],
-      "log": []
+      "log": [
+        {
+          "date": "2026-10-15",
+          "summary": "Executed by three Sonnet agents in isolated worktrees (docs, meta, phpstan) with two independent review lenses per track and up to three revise rounds. Docs track: 4 + 2 fix commits after two rounds with actionable findings (false claim that a second registration of a slug replaces the submenu, wrong claim that priority 4 is the only one working before 1.3.0, slug URL characters, return value of add_menu_page). Meta track: no actionable findings. slevomat/coding-standard was removed only as a direct dev dependency: it stays installed because silverassist/wp-coding-standards requires it, and the phpcs result is unchanged. The orchestrator merged the tracks into 48-phase-5-docs, softened the claim about admin_menu priority 5 itself (depends on callback order) and made the JS names in IMPLEMENTATION.md consistent. Not done on purpose: packagist-yml-and-contributing-details (install story pending), consolidating the update button material into one example (only the names were unified), and stating the registration window only in IMPLEMENTATION.md (the README and integration guide repeat it briefly). Verified on the branch: 110 tests, phpcs and phpstan green, composer validate --strict ok, php -l on integration-guide.php."
+        }
+      ]
     },
     {
       "id": "phase-6-phpstan",
