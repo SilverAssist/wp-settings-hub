@@ -10,8 +10,18 @@ on:
         required: false
         type: string
         default: '8.2'
+      wordpress-version:
+        description: 'WordPress version for the test suite (e.g. 6.5, latest)'
+        required: false
+        type: string
+        default: 'latest'
+      multisite:
+        description: 'Run the test suite in WordPress multisite mode (WP_MULTISITE=1)'
+        required: false
+        type: boolean
+        default: false
       upload-coverage:
-        description: 'Upload coverage reports to Codecov'
+        description: 'Collect coverage and upload it to Codecov'
         required: false
         type: boolean
         default: false
@@ -22,21 +32,38 @@ on:
 
 jobs:
   quality-checks:
-    name: Quality Checks (PHP ${{ inputs.php-version }})
+    name: Quality Checks (PHP ${{ inputs.php-version }}, WP ${{ inputs.wordpress-version }}${{ inputs.multisite && ', multisite' || '' }})
     runs-on: ubuntu-latest
-    
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      WP_MULTISITE: ${{ inputs.multisite && '1' || '0' }}
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.2.2
-        
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Setup PHP ${{ inputs.php-version }}
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ inputs.php-version }}
-          extensions: mbstring, intl, mysql, pdo_mysql
-          coverage: xdebug
+          extensions: mbstring, intl, mysqli, pdo_mysql
+          coverage: ${{ inputs.upload-coverage && 'xdebug' || 'none' }}
           tools: composer:v2
-          
+
       - name: Cache Composer dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -45,35 +72,42 @@ jobs:
           restore-keys: |
             composer-${{ inputs.php-version }}-
             composer-
-            
+
       - name: Install Composer dependencies
         env:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
         run: composer install --no-interaction --no-progress --optimize-autoloader
-        
-      - name: Setup MySQL and dependencies
+
+      - name: Install system dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq subversion mysql-client
-          sudo systemctl start mysql.service
-          mysql -e "DROP DATABASE IF EXISTS wordpress_test;" -uroot -proot || true
-          mysql -e "CREATE DATABASE wordpress_test;" -uroot -proot
-        
+
+      - name: Verify MySQL connection
+        run: mysql --host=127.0.0.1 --port=3306 -uroot -proot -e "SELECT VERSION();"
+
       - name: Install WordPress Test Suite
-        run: bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
-        
-      - name: Auto-fix code standards
-        run: composer phpcbf || true
-        
+        run: bash scripts/install-wp-tests.sh wordpress_test root root 127.0.0.1 "${{ inputs.wordpress-version }}" true
+
+      - name: Lint integration guide
+        run: php -l integration-guide.php
+
       - name: Check code standards
         run: composer phpcs
-        
+
       - name: Run static analysis
         run: composer phpstan
-        
-      - name: Run tests
-        run: composer phpunit
-        
+
+      - name: Run unit tests
+        run: vendor/bin/phpunit --no-coverage --testsuite unit
+
+      - name: Run integration tests
+        run: vendor/bin/phpunit --no-coverage --testsuite integration
+
+      - name: Collect coverage
+        if: ${{ inputs.upload-coverage }}
+        run: vendor/bin/phpunit --testsuite all
+
       - name: Upload coverage to Codecov
         if: ${{ inputs.upload-coverage }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1

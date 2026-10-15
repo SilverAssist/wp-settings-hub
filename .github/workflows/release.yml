@@ -19,12 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: ✅ Validate version consistency
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          TAG_VERSION="${{ github.event.inputs.tag || github.ref_name }}"
-          TAG_VERSION="${TAG_VERSION#v}"
+          TAG_VERSION="${RELEASE_TAG#v}"
           
           # Check CHANGELOG.md contains this version
           if ! grep -q "\[${TAG_VERSION}\]" CHANGELOG.md; then
@@ -32,6 +35,13 @@ jobs:
             exit 1
           fi
           
+          # Check the stylesheet cache-busting constant matches the release
+          CONST_VERSION=$(sed -n "s/.*PACKAGE_VERSION = '\([^']*\)'.*/\1/p" src/SettingsHub.php)
+          if [ "$CONST_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ PACKAGE_VERSION in src/SettingsHub.php is '$CONST_VERSION' but the release is $TAG_VERSION"
+            exit 1
+          fi
+
           echo "✅ Version validation passed"
 
   quality-checks:
@@ -50,7 +60,9 @@ jobs:
     
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
         
       - name: 🐘 Setup PHP 8.2
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -66,7 +78,9 @@ jobs:
         
       - name: 📦 Extract version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: echo "VERSION=${RELEASE_TAG#v}" >> $GITHUB_OUTPUT
         
       - name: 🗜️ Create release archive
         run: |
@@ -105,6 +119,7 @@ jobs:
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Release v${{ steps.get_version.outputs.VERSION }}
           body: ${{ steps.changelog.outputs.CHANGELOG }}
           files: dist/*.zip
