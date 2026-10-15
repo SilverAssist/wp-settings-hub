@@ -1,0 +1,250 @@
+{
+  "$schema": "https://silverassist.github.io/agents-toolkit/schemas/plan-state/v1.schema.json",
+  "planId": "settings-hub-hardening",
+  "title": "Settings Hub hardening: per-plugin capability, real integration tests, CI and docs realignment",
+  "description": "Execution state for issue #48. Read this file at the start of every session and continue from the first work item that is not completed. After every finished task or commit: flip its status, append a dated log entry to the work item, add a changelog entry when the note is cross-cutting, and bump lastUpdated. Narrative and design live in docs/settings-hub-hardening-plan.md and are not rewritten to record progress.",
+  "lifecycle": "multi-session",
+  "createdDate": "2026-10-14",
+  "lastUpdated": "2026-10-14",
+  "relatedDocs": [
+    "docs/settings-hub-hardening-plan.md",
+    "https://github.com/SilverAssist/wp-settings-hub/issues/48"
+  ],
+  "taskTemplate": {
+    "note": "Every phase runs this lifecycle around its phase-specific tasks. One phase is one branch and one PR referencing #48. Phase 1 uses the issue branch 48-settings-hub-hardening; later phases use 48-phase-<n>-<slug> created from up-to-date main with `gh issue develop 48 --base main --name <branch>`.",
+    "steps": [
+      {
+        "id": "branch",
+        "description": "Create or check out the phase branch from up-to-date main and confirm the previous phase is merged.",
+        "status": "not-started"
+      },
+      {
+        "id": "implement",
+        "description": "Complete the phase-specific tasks listed in the work item.",
+        "status": "not-started"
+      },
+      {
+        "id": "verify",
+        "description": "Run composer phpcs, composer phpstan and the unit and integration suites against a real WordPress test install (WP_TESTS_DIR set, DB wp_settings_hub_test, root with an empty password on 127.0.0.1 locally).",
+        "status": "not-started"
+      },
+      {
+        "id": "review",
+        "description": "Run core-review --budget medium (thorough for Phase 5), apply every critical and warning finding, and re-run until nothing new is reported.",
+        "status": "not-started"
+      },
+      {
+        "id": "pr",
+        "description": "Push, open the PR referencing #48 with this JSON updated in the same PR, and get CI green.",
+        "status": "not-started"
+      }
+    ]
+  },
+  "workItems": [
+    {
+      "id": "phase-1-ci-tooling",
+      "title": "Phase 1: CI and tooling",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-settings-hub-hardening (already created and linked to #48; carries this plan). Make CI fail on what it claims to check, test the supported WordPress range, and block releases with a stale PACKAGE_VERSION.",
+      "findings": [
+        "quality-checks.yml runs `composer phpcbf || true` before `composer phpcs`, so fixable style violations never fail CI.",
+        "integration-guide.php fails `php -l` (unexpected token \"public\" on line 475): a nested docblock at :456-473 closes the outer /* */ opened at :387. It is excluded from PHPCS and PHPStan, so nothing catches it.",
+        "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 is commented `# v5.2.2` in ci.yml, quality-checks.yml and release.yml; that SHA is tag v7.0.1 and v5.2.2 does not exist. actions/github-script@v9 in auto-merge-dependabot.yml is a floating tag (v9 = 3a2844b7e9c422d3c10d287c895573f7108da1b3). setup-php 2.40.0, cache v6.1.0, codecov v7.1.1 and action-gh-release v3.0.3 pins are correct.",
+        "CI installs WordPress 'latest' only and starts MySQL via apt/systemctl; the reference repo silver-assist-security uses a mysql:8.0 service container, host 127.0.0.1 and a WP version matrix.",
+        "release.yml validates only that CHANGELOG.md contains the tag; PACKAGE_VERSION is still '1.2.0' at v1.2.1 and v1.2.2. The workflow_dispatch path derives VERSION from GITHUB_REF, which is refs/heads/main on a manual run.",
+        "scripts/install-wp-tests.sh is a hand copy lacking empty-password support; `[ ! -f wp-tests-config.php ]` at :130 tests the working directory. silver-assist-security wraps vendor/silverassist/wp-coding-standards/scripts/install-wp-tests.sh in 3 lines.",
+        "phpunit.xml hardcodes WP_TESTS_DIR=/tmp/wordpress-tests-lib while the install script uses $TMPDIR (/var/folders/... on macOS); WP_TESTS_PHPUNIT_POLYFILLS_PATH is relative; bootstrap hint says password 'root' and host localhost."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "completed", "notes": "48-settings-hub-hardening created with gh issue develop 48." },
+        { "id": "ci-remove-phpcbf-autofix", "status": "not-started" },
+        { "id": "fix-integration-guide-parse-error-and-lint", "status": "not-started" },
+        { "id": "ci-mysql-service-container", "status": "not-started" },
+        { "id": "ci-wp-matrix-and-multisite-job", "status": "not-started", "notes": "WP 6.5 x PHP 8.2; WP latest x PHP 8.2/8.3/8.4; one WP_MULTISITE=1 job on latest." },
+        { "id": "ci-split-unit-and-integration-steps", "status": "not-started" },
+        { "id": "ci-fix-action-pins", "status": "not-started" },
+        { "id": "release-validate-package-version-and-dispatch", "status": "not-started" },
+        { "id": "local-setup-shared-install-script-and-phpunit-config", "status": "not-started" },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started" },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": [
+        {
+          "date": "2026-10-14",
+          "summary": "Issue #48 opened and branch 48-settings-hub-hardening created and linked. Baseline verified against a real WordPress 7.1.3 test install: unit 16/16, integration 8/8, all 24/24 (86 assertions); also 24/24 with WP_MULTISITE=1. phpcs and phpstan pass; composer audit clean."
+        }
+      ]
+    },
+    {
+      "id": "phase-2-real-integration-tests",
+      "title": "Phase 2: Test infrastructure and real integration tests",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-phase-2-integration-tests. Characterise current behaviour through real WordPress before any behaviour change. See the test list in the plan's 'Tests (Phase 2, extended in Phases 3 and 4)' section.",
+      "findings": [
+        "Only 1 of 8 integration tests drives WordPress admin state (test_wordpress_admin_menu_integration), and it only asserts $submenu is non-empty.",
+        "Fake or vacuous: test_capabilities_check_for_settings_access (asserts core current_user_can only), test_admin_menu_hook_registration (admin_menu already has callbacks without the hub; comment about the constructor is false), test_plugin_callback_execution (calls the stored closure directly), test_tabs_navigation_with_multiple_plugins ($_GET['page'] is never read by src; active tab never asserted).",
+        "Unit tests also extend WP_UnitTestCase and need MySQL. Only test_enqueue_styles_on_silver_assist_page drives WP_Styles, and it asserts enqueued only (not src/ver); test_enqueue_styles_not_on_other_pages cannot fail because URL resolution returns '' without plugin_file.",
+        "Singleton reset is inconsistent (unit: tearDown, integration: setUp) and admin-menu globals ($menu, $submenu, $_wp_submenu_nopriv, ...) are never reset, so do_action('admin_menu') accumulates state across tests.",
+        "Coverage cannot be measured locally (no xdebug/pcov on the dev machine); CI has xdebug and uploads to Codecov with fail_ci_if_error: false and no threshold."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "not-started" },
+        { "id": "shared-testcase-resets-and-helpers", "status": "not-started" },
+        { "id": "unit-setup-logs-in-administrator", "status": "not-started" },
+        { "id": "remove-fake-integration-tests", "status": "not-started" },
+        { "id": "add-characterisation-integration-tests", "status": "not-started" },
+        { "id": "dedupe-render-tests-between-suites", "status": "not-started" },
+        { "id": "optional-port-run-phpunit-complete", "status": "not-started" },
+        { "id": "record-coverage-baseline", "status": "not-started", "notes": "Store the CI coverage percentage in this work item's log; Phase 2 or later sets the gate at baseline minus 2 points." },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started" },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": []
+    },
+    {
+      "id": "phase-3-capability",
+      "title": "Phase 3: Per-plugin capability",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-phase-3-capability. Implement then document. Design decisions (correct here if the owner disagrees): parent menu and Dashboard stay manage_options, filterable via silverassist_settings_hub_dashboard_capability; per-plugin filter silverassist_settings_hub_plugin_capability; invalid values fail closed to manage_options with _doing_it_wrong; validation regex ^[A-Za-z0-9_-]+$ (no sanitize_key, it lowercases); cards and tabs filtered with current_user_can; Dashboard tab hidden without the dashboard capability; wp_die(403) guard in render_plugin_page; capability assigned after array_merge.",
+      "findings": [
+        "src/SettingsHub.php:295, :307 and :322 hardcode manage_options; register_plugin() never reads $args['capability'].",
+        "IMPLEMENTATION.md:169, :250-280 and :1165 call the argument required since v1.1.1 and blame 403 errors on omitting it; that is false.",
+        "silver-assist-security/src/Admin/AdminPanel.php:262 passes 'capability' => 'manage_options' and requires the hub at ^1.2, so 1.3.0 is picked up without a constraint change.",
+        "WP core (7.1.3): add_submenu_page drops rows for users without the capability (plugin.php:1504-1507); user_can_access_admin_page checks the submenu's own capability (plugin.php:2234-2240); the top-level item stays and links to the first accessible submenu (menu.php:175-200, menu-header.php:157-173). Probe: editor reaches an edit_posts page under a manage_options parent, gets 403 on page=silver-assist.",
+        "options.php is gated by option_page_capability_{group} (options.php:29, :47); plugins lowering their capability and saving through the Settings API must filter it. Document it.",
+        "Existing unit render tests run as user 0 and will fail once cards are filtered per user; Phase 2 logs in an administrator first."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "not-started" },
+        { "id": "capability-helpers-and-constant", "status": "not-started" },
+        { "id": "apply-capability-to-menus-cards-tabs-and-guard", "status": "not-started" },
+        { "id": "phpdoc-and-array-shapes", "status": "not-started" },
+        { "id": "unit-tests-capability", "status": "not-started" },
+        { "id": "integration-tests-capability-per-role", "status": "not-started" },
+        { "id": "docs-capability-and-filters", "status": "not-started" },
+        { "id": "changelog-unreleased-entry", "status": "not-started" },
+        { "id": "manual-check-as-editor", "status": "not-started" },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started" },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": []
+    },
+    {
+      "id": "phase-4-code-hardening",
+      "title": "Phase 4: Code hardening",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-phase-4-hardening. Each fix lands with a test that is red before and green after; record the red run in the log.",
+      "findings": [
+        "register_submenus() is not idempotent: firing admin_menu twice yields [silver-assist, early, early, late]. A plugin registered from admin_menu priority 10 gets no submenu in that request.",
+        "enqueue_styles() uses strpos($hook_suffix, 'silver-assist'), which also matches settings_page_silver-assist-security and toplevel_page_not-silver-assist-at-all; the first clause is redundant. Core derives the submenu prefix from sanitize_title() of the translated parent title.",
+        "__wakeup() is public and empty: unserialize(serialize($hub)) !== $hub.",
+        "Callback actions print raw output inside a <script> click listener with no event parameter, run at render time, can collide on button id (sanitize_key of slug-label), and the code comment says AJAX although nothing is wired.",
+        "PACKAGE_VERSION is '1.2.0' at v1.2.2 and is the stylesheet ver; v1.2.1 changed the CSS.",
+        "assets/css/settings-hub.css:299-303 queries the container element itself (@container on .silverassist-dashboard-grid), which can never match."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "not-started" },
+        { "id": "idempotent-and-late-registration", "status": "not-started" },
+        { "id": "exact-hook-suffix-match", "status": "not-started" },
+        { "id": "wakeup-throws", "status": "not-started" },
+        { "id": "action-button-contract", "status": "not-started" },
+        { "id": "package-version-bump-and-sync-test", "status": "not-started" },
+        { "id": "css-container-query", "status": "not-started" },
+        { "id": "changelog-unreleased-entry", "status": "not-started" },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started" },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": []
+    },
+    {
+      "id": "phase-5-docs",
+      "title": "Phase 5: Documentation realignment",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-phase-5-docs. Apply the canonical-home table and the correction list in the plan. Leave historical CHANGELOG entries alone. Review with core-review --budget thorough until it reports nothing new.",
+      "findings": [
+        "IMPLEMENTATION.md requires PHP 8.3+ (:40, :97, :1147) while composer.json requires ^8.2; it embeds a stale changelog and version footer (:1322-1344) and claims built-in update support (:33).",
+        "'Settings > Silver Assist' in composer.json:3, the class docblock and copilot-instructions.md contradicts the top-level menu at position 80.",
+        "CONTRIBUTING.md and copilot-instructions.md describe a Brain Monkey fallback and PHPUnit 10; the bootstrap hard-requires the WP test suite and the repo uses PHPUnit 9.6.",
+        "README Development section is duplicated (:450-512 and :514-554) with a stray fence at :512 and wrong test counts; the anchor IMPLEMENTATION.md#integration-with-wp-github-updater does not exist.",
+        "Install docs mix Packagist badges and plain composer require with the private vcs-repository requirement; CONTRIBUTING omits the token needed for dev dependencies.",
+        "copilot-instructions.md documents a non-existent `composer phpcs:fix`, a stale file tree, add_options_page and the Settings API, and Slevomat (a dev dependency no ruleset uses).",
+        "Undocumented: tab_title also labels the sidebar submenu; plugin_file is first-wins and fails silently outside ABSPATH; the Dashboard hook suffix toplevel_page_silver-assist; the action callback signature; the silverassist-settings-hub text domain is never loaded.",
+        "IMPLEMENTATION.md:351 describes onclick attributes; the code uses an addEventListener <script> block."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "not-started" },
+        { "id": "readme", "status": "not-started" },
+        { "id": "implementation-md", "status": "not-started" },
+        { "id": "contributing-md", "status": "not-started" },
+        { "id": "copilot-instructions-pointer-file", "status": "not-started" },
+        { "id": "integration-guide-example", "status": "not-started" },
+        { "id": "composer-description-and-slevomat", "status": "not-started" },
+        { "id": "text-domain-wording", "status": "not-started" },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started", "notes": "Use --budget thorough for this phase." },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": []
+    },
+    {
+      "id": "phase-6-phpstan",
+      "title": "Phase 6: PHPStan tightening",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-phase-6-phpstan. Keep src/ fully clean; a tests/-only baseline is acceptable for the 2.x upgrade if logged as a follow-up.",
+      "findings": [
+        "With reportUnmatchedIgnoredErrors: true, three ignore patterns are stale (Undefined type \\WP_UnitTestCase, Use of unknown class \\WP_UnitTestCase, Class .* extends unknown class WP_UnitTestCase).",
+        "With the ignoreErrors list removed: 106 errors (13 in src/SettingsHub.php, 33 in tests/Integration, 59 in tests/Unit, 1 in tests/bootstrap.php). src errors are array-shape casts (:141, :148, :384, :386, :398, :406, ...) and Constant ABSPATH not found (:267).",
+        "phpstan/phpstan is on 1.12.x (^1.10); szepeviktor/phpstan-wordpress already allows ^2.0."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "not-started" },
+        { "id": "report-unmatched-and-drop-stale-patterns", "status": "not-started" },
+        { "id": "plugin-data-type-alias-and-src-clean", "status": "not-started" },
+        { "id": "upgrade-phpstan-2", "status": "not-started" },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started" },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": []
+    },
+    {
+      "id": "phase-7-release",
+      "title": "Phase 7: Release 1.3.0 and consumer verification",
+      "kind": "phase",
+      "status": "not-started",
+      "notes": "Branch: 48-phase-7-release-1-3-0. Tags are immutable; never move or delete an existing tag.",
+      "findings": [
+        "CHANGELOG.md lacks a [1.2.2] compare link and [Unreleased] still compares from v1.2.1.",
+        "The only consumer is silver-assist-security (requires ^1.2 via a vcs repository); its own SettingsHub integration test only checks that the hub resolves."
+      ],
+      "tasks": [
+        { "id": "branch", "status": "not-started" },
+        { "id": "changelog-1-3-0-and-links", "status": "not-started" },
+        { "id": "package-version-1-3-0", "status": "not-started" },
+        { "id": "tag-and-release-workflow", "status": "not-started" },
+        { "id": "consumer-silver-assist-security-suite", "status": "not-started" },
+        { "id": "close-issue-48", "status": "not-started" },
+        { "id": "verify", "status": "not-started" },
+        { "id": "review", "status": "not-started" },
+        { "id": "pr", "status": "not-started" }
+      ],
+      "log": []
+    }
+  ],
+  "changelog": [
+    {
+      "date": "2026-10-14",
+      "summary": "Plan seeded from a four-track audit (integration tests against a real WP 7.1.3 install, capability design verified against core, documentation drift, CI and tooling). Lifecycle multi-session: the request asked for phases across sessions and the work lands as one PR per phase."
+    }
+  ]
+}
