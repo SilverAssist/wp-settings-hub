@@ -34,48 +34,6 @@ class StylesIntegrationTest extends TestCase {
 	private const HUB_SUFFIX = 'toplevel_page_silver-assist';
 
 	/**
-	 * The admin screen that was current before the test, restored in tearDown().
-	 *
-	 * @var mixed
-	 */
-	private $previous_screen = null;
-
-	/**
-	 * Whether a screen was set before the test.
-	 *
-	 * @var bool
-	 */
-	private bool $had_screen = false;
-
-	/**
-	 * Give core's admin_enqueue_scripts callbacks the screen they expect in wp-admin.
-	 *
-	 * @return void
-	 */
-	protected function setUp(): void {
-		parent::setUp();
-
-		$this->had_screen      = array_key_exists( 'current_screen', $GLOBALS );
-		$this->previous_screen = $GLOBALS['current_screen'] ?? null;
-		set_current_screen( 'dashboard' );
-	}
-
-	/**
-	 * Restore the screen that was current before the test.
-	 *
-	 * @return void
-	 */
-	protected function tearDown(): void {
-		if ( $this->had_screen ) {
-			$GLOBALS['current_screen'] = $this->previous_screen;
-		} else {
-			unset( $GLOBALS['current_screen'] );
-		}
-
-		parent::tearDown();
-	}
-
-	/**
 	 * Fetch the style object WordPress registered for the hub handle.
 	 *
 	 * @return \_WP_Dependency

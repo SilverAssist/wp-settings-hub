@@ -43,7 +43,7 @@ abstract class TestCase extends \WP_UnitTestCase {
 	 *
 	 * @var string[]
 	 */
-	private const PAGE_GLOBALS = array( 'pagenow', 'plugin_page', 'typenow', 'parent_file', 'submenu_file', 'hook_suffix', 'wp_styles' );
+	private const PAGE_GLOBALS = array( 'pagenow', 'plugin_page', 'typenow', 'parent_file', 'submenu_file', 'hook_suffix', 'wp_styles', 'current_screen' );
 
 	/**
 	 * Snapshot of the globals above, keyed by name.
@@ -94,6 +94,9 @@ abstract class TestCase extends \WP_UnitTestCase {
 		}
 
 		$GLOBALS['wp_styles'] = new \WP_Styles();
+
+		// wp-admin always has a current screen; core callbacks on admin hooks expect one.
+		set_current_screen( 'dashboard' );
 
 		$this->reset_hub();
 	}
