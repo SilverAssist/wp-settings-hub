@@ -131,7 +131,7 @@ public function enqueue_admin_assets( string $hook_suffix ): void {
 }
 ```
 
-`get_plugin_page_hookname( $slug, $parent_slug )` reads the prefix WordPress stored for the parent menu, so it follows the translated title. The hub does not return the suffix of the pages it adds. If you add your own page with `add_submenu_page()`, `add_options_page()` or `add_menu_page()`, the value that function returns is the hook suffix of that page, or `false` when the current user lacks the capability you passed.
+`get_plugin_page_hookname( $slug, $parent_slug )` reads the prefix WordPress stored for the parent menu, so it follows the translated title. The hub does not return the suffix of the pages it adds. If you add your own page with `add_submenu_page()`, `add_options_page()` or `add_menu_page()`, the value that function returns is the hook suffix of that page. `add_submenu_page()` and `add_options_page()` return `false` instead when the current user lacks the capability you passed, while `add_menu_page()` always returns the suffix.
 
 The hub itself loads its stylesheet on the Dashboard suffix and on the `{prefix}_page_` suffixes of its own menu. It does not load it on look-alikes such as `settings_page_silver-assist-security`.
 
@@ -139,7 +139,7 @@ The hub itself loads its stylesheet on the Dashboard suffix and on the `{prefix}
 
 The slug becomes the menu slug, the `?page=` value in every URL the hub builds, the tail of the hook suffix, and the base of the button ids. The hub does not sanitise it. Use only lowercase letters, digits, hyphens and underscores (`my-plugin`, `my_plugin_2`):
 
-- The hub builds `admin.php?page={slug}` without encoding the slug, so characters that mean something in a URL (`&`, `?`, `#`, `%`, a space) corrupt the link.
+- The hub builds `admin.php?page={slug}` without encoding the slug, so characters that split or rewrite a query string (`&`, `#`, and `%` followed by two hex digits) change the `?page=` value the link carries.
 - `add_submenu_page()` passes the slug through `plugin_basename()`, which turns backslashes into slashes, trims slashes at both ends and strips a leading plugins directory path, so a slug with `/` or `\` may not match the `?page=` value.
 - WordPress removes every `.php` from a slug when it builds the hook suffix, so `reports.php` and `reports` get the same suffix.
 - `sanitize_key()` lowercases the slug and drops other characters when the hub builds a button id, so two slugs that differ only in case or punctuation can produce the same button id. The second one gets a numeric suffix, see [Action button structure](#action-button-structure).
@@ -509,7 +509,7 @@ $hub->register_plugin(
 
 **Behaviour notes**:
 
-- Registering a slug that is already registered replaces its data silently. Nothing is merged with the earlier registration and no notice is raised.
+- Registering a slug that is already registered replaces the stored data (dashboard card, tab label, `get_plugins()`) silently. Nothing is merged with the earlier registration and no notice is raised. If the hub has already built that slug's submenu page, the page itself keeps the first registration's callback, title and capability for the rest of the request, so register each slug once.
 - `plugin_file` is not stored with the plugin data, so it does not appear in `get_plugins()`.
 
 #### Asset URL resolution

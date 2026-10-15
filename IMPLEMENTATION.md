@@ -241,8 +241,8 @@ On a request where `admin_menu` never fires (the front end, `admin-ajax.php`, a 
 
 Things worth knowing:
 
-- **The menu registration is idempotent.** The hub adds each page once per slug. Firing `admin_menu` again, or registering the same slug twice before it fires, never duplicates a menu row. A second registration of a slug replaces the first one's data.
-- **Priority 4 on `admin_menu` stays the safest choice.** It is the only one that also works with hub versions before 1.3.0, and several Silver Assist plugins can share one site: the first plugin whose autoloader loads `SettingsHub` defines the class for all of them, so the copy that runs can be older than the version your plugin requires.
+- **The menu registration is idempotent.** The hub adds each page once per slug. Firing `admin_menu` again, or registering the same slug twice, never duplicates a menu row. A second registration of a slug replaces the stored data (dashboard card, tab label, `get_plugins()`). If the hub has already built that slug's submenu page, the page itself keeps the first registration's callback, title and capability for the rest of the request, so register each slug once.
+- **Priority 4 on `admin_menu` stays the safest `admin_menu` priority.** Before 1.3.0 the hub built its menus once, at priority 5, so every registration that happens before that pass also works with older hub versions (`plugins_loaded`, `init`, or an `admin_menu` priority from 0 to 4), while priorities 5 and above only work from 1.3.0. This matters because several Silver Assist plugins can share one site: the first plugin whose autoloader loads `SettingsHub` defines the class for all of them, so the copy that runs can be older than the version your plugin requires.
 - **The `capability` is applied when the menu is built.** The value you pass is validated when you call `register_plugin()`, but WordPress receives it, together with the result of the `silverassist_settings_hub_plugin_capability` filter, when the hub builds the submenu. Add those filters before `admin_menu`. See the README, "Restrict a Plugin to a Capability".
 - **Hook suffixes are a separate topic.** The README, "Hook suffixes", owns the suffix table and the way to get a suffix from WordPress.
 
@@ -258,7 +258,7 @@ Based on real-world implementations, these are the **most common errors** and th
 
 **Cause**: Plugin registers too late. Up to hub 1.2.x a registration after the hub's own `admin_menu` priority 5 pass (for example at the default priority 10) left the plugin without a submenu. From 1.3.0 a registration made while `admin_menu` is running gets its submenu immediately, so this symptom now means the plugin registers after `admin_menu` has finished (for example on `admin_init`), which is reported with `_doing_it_wrong()`, or that the user lacks the plugin's `capability`.
 
-**Solution**: Register on or before `admin_menu` (see [Registration Timing](#registration-timing)). Priority **4** is still the safest choice, and the only one that works with hub versions before 1.3.0.
+**Solution**: Register on or before `admin_menu` (see [Registration Timing](#registration-timing)). Priority **4** is still the safest `admin_menu` priority: any registration before the hub's priority 5 pass (priorities 0 to 4, `plugins_loaded`, `init`) also works with hub versions before 1.3.0, while priorities 5 and above only work from 1.3.0.
 
 ```php
 // ❌ RISKY - Default priority (10): fine with hub 1.3.0+, but the submenu is lost with older hub versions
@@ -1023,7 +1023,7 @@ public function render_settings_page(): void {
 
 ### Critical Requirements (Must Follow)
 
-1. **Registration Timing**: ALWAYS register on or before `admin_menu`. Priority 4 on `admin_menu` is the safest choice (see [Registration Timing](#registration-timing))
+1. **Registration Timing**: ALWAYS register on or before `admin_menu`. Priority 4 on `admin_menu` is the safest `admin_menu` priority, because it also works with hub versions before 1.3.0 (see [Registration Timing](#registration-timing))
 2. **Capability Parameter**: optional (1.3.0+). Omit it for administrator-only pages and pass `capability` only to open a page to a lower role
 3. **Multiple Hook Suffixes**: ALWAYS check for both the standalone and the Hub page, and get the suffixes from `get_plugin_page_hookname()` instead of typing them (see the README, "Hook suffixes")
 4. **Echo vs Return**: ALWAYS echo JavaScript in action callbacks, never return

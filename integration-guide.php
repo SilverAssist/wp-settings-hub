@@ -357,7 +357,10 @@ class Existing_Plugin {
  *
  * 3. **Use Unique Slugs**: Ensure your plugin slug is unique across all
  *    Silver Assist plugins to avoid conflicts. Registering a slug that is
- *    already registered replaces the earlier registration silently. The hub
+ *    already registered replaces the stored data silently. If the hub has
+ *    already built that slug's submenu page, the page keeps the first
+ *    registration's callback, title and capability for the rest of the
+ *    request, so register each slug once. The hub
  *    does not sanitise slugs: stick to lowercase letters, digits, hyphens and
  *    underscores, because the slug is the menu slug, the ?page= value, the
  *    tail of the hook suffix and the base of the button ids.
