@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Optional `capability` argument for `register_plugin()`, `manage_options` by default. It decides who gets the plugin's submenu item, dashboard card, tab and page. An invalid value falls back to `manage_options` and is reported with `_doing_it_wrong()`.
+- Filters `silverassist_settings_hub_plugin_capability` and `silverassist_settings_hub_dashboard_capability`.
+
+### Changed
+
+- `get_plugins()` entries and the `silverassist_settings_hub_plugin_actions` `$plugin` payload now always contain `capability`.
+- The dashboard cards and the tabs show only the plugins the current user can open, and the Dashboard tab is hidden for users without the dashboard capability. Calling `render_dashboard()` with no logged-in user now renders the empty state.
+- A plugin page stops with a 403 when it is rendered for a user who lacks the plugin's capability.
+
+### Documentation
+
+- Documented the `capability` argument, its filters and the `option_page_capability_{group}` caveat (README, IMPLEMENTATION.md). Replaced the "Error 2: 403" troubleshooting entry, which wrongly said a missing `capability` caused 403 errors.
+
 ## [1.2.2] - 2026-09-25
 
 ### Changed

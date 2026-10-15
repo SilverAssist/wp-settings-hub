@@ -38,7 +38,7 @@ The `silverassist/wp-settings-hub` package provides a centralized admin menu sys
 - **Package**: `silverassist/wp-settings-hub` v1.1.1+
 - **WordPress**: 6.5+
 - **PHP**: 8.3+ (strict types required)
-- **Capability**: `manage_options` (or custom capability)
+- **Capability**: `manage_options` by default; a plugin can pass its own `capability` (1.3.0+)
 
 ---
 
@@ -166,7 +166,7 @@ class Plugin {
             [
                 'description' => __( 'Plugin description', 'your-plugin' ),
                 'version'     => '1.0.0',
-                'capability'  => 'manage_options',           // ⚠️ CRITICAL: Required in v1.1.1+
+                // 'capability' => 'edit_posts',             // Optional (1.3.0+), defaults to manage_options
             ]
         );
     }
@@ -245,39 +245,31 @@ add_action( 'admin_menu', [ $this, 'register_with_hub' ], 4 );
 
 ### Error 2: "Sorry, you are not allowed to access this page" (403)
 
-**Symptom**: Admin page loads but shows 403 error when accessed via Settings Hub.
+**Symptom**: A Silver Assist page answers with a 403, or a form saves with a 403 while its page loads.
 
-**Cause**: Settings Hub v1.1.1+ requires explicit `capability` parameter. Without it, WordPress uses default capability check which may not match.
-
-**Solution**: Always include `capability` in registration options.
+**Cause 1: the user lacks the page's capability.** Plugin pages require `manage_options` unless the plugin registers with a `capability` (1.3.0+). WordPress answers 403 to anyone whose role does not hold it.
 
 ```php
-// ❌ WRONG - Missing capability
 $hub->register_plugin(
     'your-plugin',
     __( 'Your Plugin', 'your-plugin' ),
     [ $this, 'render_settings_page' ],
     [
-        'description' => __( 'Description', 'your-plugin' ),
-        'version'     => '1.0.0',
-        // ⚠️ Missing 'capability' causes 403 errors
-    ]
-);
-
-// ✅ CORRECT - Capability explicitly defined
-$hub->register_plugin(
-    'your-plugin',
-    __( 'Your Plugin', 'your-plugin' ),
-    [ $this, 'render_settings_page' ],
-    [
-        'description' => __( 'Description', 'your-plugin' ),
-        'version'     => '1.0.0',
-        'capability'  => 'manage_options',  // ✅ Required
+        'capability' => 'edit_posts', // Editors can open this page.
     ]
 );
 ```
 
-**Technical explanation**: Settings Hub needs to know what capability to check when registering the submenu with WordPress. Without this parameter, `add_submenu_page()` uses a default that may not match your callback's capability check.
+**Cause 2: the Dashboard needs its own capability.** `admin.php?page=silver-assist` requires `manage_options` (change it with the `silverassist_settings_hub_dashboard_capability` filter). A user who only holds a plugin's capability is refused the Dashboard and should open the plugin page; the Dashboard tab is hidden for them.
+
+**Cause 3: saving goes through `options.php`.** When the settings page saves with the Settings API, WordPress checks `manage_options` for the save request, whatever capability the page uses. Lower it for your option group:
+
+```php
+add_filter(
+    'option_page_capability_your_option_group',
+    static fn(): string => 'edit_posts'
+);
+```
 
 ---
 
@@ -396,7 +388,6 @@ class Simple_Plugin {
             [
                 'description' => __( 'A simple plugin example', 'simple-plugin' ),
                 'version'     => self::VERSION,
-                'capability'  => 'manage_options',
             ]
         );
     }
@@ -564,7 +555,6 @@ class Advanced_Plugin {
             [
                 'description' => __( 'Advanced plugin with GitHub updates', 'advanced-plugin' ),
                 'version'     => self::VERSION,
-                'capability'  => 'manage_options',
                 'actions'     => $actions,
             ]
         );
@@ -1162,7 +1152,7 @@ Test in major browsers:
 ### Critical Requirements (Must Follow)
 
 1. **Hook Priority 4**: ALWAYS use priority 4 for `admin_menu` hook
-2. **Capability Parameter**: ALWAYS include `capability` in registration array
+2. **Capability Parameter**: optional (1.3.0+). Omit it for administrator-only pages and pass `capability` only to open a page to a lower role
 3. **Multiple Hook Suffixes**: ALWAYS check for both `settings_page_*` and `silver-assist_page_*`
 4. **Echo vs Return**: ALWAYS echo JavaScript in action callbacks, never return
 5. **Class Existence**: ALWAYS check `class_exists( SettingsHub::class )` before using

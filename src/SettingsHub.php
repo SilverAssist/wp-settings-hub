@@ -33,6 +33,7 @@ final class SettingsHub {
 	 *     name: string,
 	 *     slug: string,
 	 *     callback: callable,
+	 *     capability: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string,
@@ -47,6 +48,13 @@ final class SettingsHub {
 	 * @var string
 	 */
 	private const PARENT_SLUG = 'silver-assist';
+
+	/**
+	 * Capability required when a plugin does not declare one.
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_CAPABILITY = 'manage_options';
 
 	/**
 	 * Whether the parent menu has been registered.
@@ -128,6 +136,8 @@ final class SettingsHub {
 	 * @param array<string, string|array<array<string, string|callable>>> $args {
 	 *     Optional arguments for the plugin.
 	 *
+	 *     @type string   $capability   Capability a user needs to see and open the plugin's page. Defaults to
+	 *                                  'manage_options'. An invalid value falls back to the default.
 	 *     @type string   $description  Plugin description.
 	 *     @type string   $version      Plugin version number.
 	 *     @type string   $tab_title    Custom tab title (defaults to plugin name).
@@ -145,7 +155,7 @@ final class SettingsHub {
 		unset( $args['plugin_file'] );
 
 		// Store plugin data.
-		$this->plugins[ $slug ] = array_merge(
+		$plugin = array_merge(
 			array(
 				'name'     => $name,
 				'slug'     => $slug,
@@ -153,6 +163,11 @@ final class SettingsHub {
 			),
 			$args
 		);
+
+		// Set after the merge so the stored value is always present and normalised.
+		$plugin['capability'] = $this->normalize_capability( $args['capability'] ?? null, $slug );
+
+		$this->plugins[ $slug ] = $plugin;
 
 		// Hook into admin_menu to register menus.
 		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
@@ -292,7 +307,7 @@ final class SettingsHub {
 		add_menu_page(
 			__( 'Silver Assist', 'silverassist-settings-hub' ),
 			__( 'Silver Assist', 'silverassist-settings-hub' ),
-			'manage_options',
+			$this->get_dashboard_capability(),
 			self::PARENT_SLUG,
 			array( $this, 'render_dashboard' ),
 			'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDIyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0yMTUuNTQgNjguOTg3MkwxMTkuMjE0IDIuOTk4NjVDMTEzLjM5IC0wLjk5OTU1IDEwNS43MDggLTAuOTk5NTUgOTkuODcxNCAyLjk5ODY1TDMuNTQ1MTMgNjguOTg3MkMtMy4wMzE5NSA3My40OTU4IDAuMTQ3Mzc2IDgzLjgwMTIgOC4xMTk5NiA4My44MDEySDI4LjE2NjdWMTY2Ljg2NEMyOC4xNjY3IDE3My44ODggMzMuODQ1OCAxNzkuNTc2IDQwLjg1OTcgMTc5LjU3Nkg4OS4zMjYyQzcwLjYxNDMgMTcxLjU0MyA1Ny40ODQ0IDE1Mi44NjQgNTcuNDg0NCAxMzIuMjY2VjYwLjM4MzJDNTcuNDg0NCA1NS40NzM1IDYxLjU4NiA1MS41MTE4IDY2LjU0OTEgNTEuNzc5MUM3MS4yMDg5IDUyLjAyMjIgNzQuNjkxNiA1Ni4yMDI3IDc0LjY5MTYgNjAuODY5M1Y5Ni4zMTg0Qzc0LjY5MTYgOTguMDA3NiA3Ni40NzU0IDk5LjA3NyA3Ny45NTU5IDk4LjI4NzFMNzguMDA0NCA5OC4yNjI4Qzc4LjczMjUgOTcuODczOSA3OS4yMDU3IDk3LjEzMjYgNzkuMjA1NyA5Ni4yOTRWMzYuNzgyOEM3OS4yMDU3IDMxLjg3MzIgODMuMzA3MyAyNy45MTE0IDg4LjI3MDUgMjguMTc4OEM5Mi45MzAyIDI4LjQyMTkgOTYuNDEyOSAzMi42MDIzIDk2LjQxMjkgMzcuMjY4OVY4OS43NDM4Qzk2LjQxMjkgOTEuMDgwNiA5Ny41Nzc5IDkyLjEzNzkgOTguOTAwNiA5MS45Njc3SDk4Ljk0OTFDMTAwLjA3OCA5MS44MjE5IDEwMC45MjcgOTAuODc0IDEwMC45MjcgODkuNzQzOFYzMC4wOTg5QzEwMC45MjcgMjUuMTg5MyAxMDUuMDI5IDIxLjIyNzUgMTA5Ljk5MiAyMS40OTQ5QzExNC42NTIgMjEuNzM3OSAxMTguMTM0IDI1LjkxODQgMTE4LjEzNCAzMC41ODVWODkuNzQzOEMxMTguMTM0IDkwLjg4NjEgMTE4Ljk4NCA5MS44MjE5IDEyMC4xMTIgOTEuOTY3N0gxMjAuMTYxQzEyMS40ODMgOTIuMTM3OSAxMjIuNjQ4IDkxLjA5MjcgMTIyLjY0OCA4OS43NTZWMzguMzc0OEMxMjIuNjQ4IDMzLjQ2NTIgMTI2Ljc1IDI5LjUwMzQgMTMxLjcxMyAyOS43NzA4QzEzNi4zNzMgMzAuMDEzOCAxMzkuODU2IDM0LjE5NDMgMTM5Ljg1NiAzOC44NjA5Vjk2LjI4MTlDMTM5Ljg1NiA5Ny4xMDgzIDE0MC4zMjkgOTcuODYxNyAxNDEuMDU3IDk4LjI1MDZMMTQxLjEwNSA5OC4yNzQ5QzE0Mi41OTggOTkuMDY0OCAxNDQuMzcgOTcuOTk1NCAxNDQuMzcgOTYuMzA2MlY4MS4yNzM1QzE0NC4zNyA3Ni42MDY5IDE0Ny44NjUgNzIuNDI2NCAxNTIuNTEyIDcyLjE4MzNDMTU3LjQ3NSA3MS45MjgxIDE2MS41NzcgNzUuODc3NyAxNjEuNTc3IDgwLjc4NzNWMTMyLjI0MUMxNjEuNTc3IDE1Mi44NCAxNDguNDQ3IDE3MS41MTkgMTI5LjczNSAxNzkuNTUxSDE3OC4yMDJDMTg1LjIxNiAxNzkuNTUxIDE5MC44OTUgMTczLjg2NCAxOTAuODk1IDE2Ni44NFY4My44MDEySDIxMC45MjlDMjE4LjkwMiA4My44MDEyIDIyMi4wODEgNzMuNDgzNiAyMTUuNTA0IDY4Ljk4NzJIMjE1LjU0WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTE0MC44OTkgMTExLjg4NkMxMzMuMDEyIDEwMy45ODcgMTIwLjIyMiAxMDMuOTg3IDExMi4zNDYgMTExLjg4NkwxMDkuNTU1IDExNC42ODFMMTA2Ljc2NCAxMTEuODg2Qzk4Ljg3NjUgMTAzLjk4NyA4Ni4wODY0IDEwMy45ODcgNzguMjEwOSAxMTEuODg2QzcwLjMyMzIgMTE5Ljc4NSA3MC4zMjMyIDEzMi41OTQgNzguMjEwOSAxNDAuNDgxTDEwOS41NjcgMTcxLjg4M0wxMjYuMTY4IDE1NS4yNThMMTQwLjkyNCAxNDAuNDgxQzE0OC44MTEgMTMyLjU4MiAxNDguODExIDExOS43NzMgMTQwLjkyNCAxMTEuODg2SDE0MC44OTlaIiBmaWxsPSJibGFjayIvPgo8L3N2Zz4=',
@@ -304,7 +319,7 @@ final class SettingsHub {
 			self::PARENT_SLUG,
 			__( 'Dashboard', 'silverassist-settings-hub' ),
 			__( 'Dashboard', 'silverassist-settings-hub' ),
-			'manage_options',
+			$this->get_dashboard_capability(),
 			self::PARENT_SLUG,
 			array( $this, 'render_dashboard' )
 		);
@@ -319,7 +334,7 @@ final class SettingsHub {
 				self::PARENT_SLUG,
 				$plugin['name'],
 				$plugin['tab_title'] ?? $plugin['name'],
-				'manage_options',
+				$this->get_plugin_capability( $plugin ),
 				$plugin['slug'],
 				function () use ( $plugin ): void {
 					$this->render_plugin_page( $plugin );
@@ -329,12 +344,133 @@ final class SettingsHub {
 	}
 
 	/**
+	 * Normalise a capability name, falling back to the default when it is not usable.
+	 *
+	 * Fails closed: an invalid value never opens a page to more users than the default would.
+	 * Only primitive capabilities and role-style capabilities are supported; meta
+	 * capabilities that need an object ID (for example edit_post) cannot be checked here.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param mixed  $capability Raw capability, or null when the caller did not pass one.
+	 * @param string $context    Plugin slug (or menu slug) used in the notice.
+	 *
+	 * @return string A usable capability name.
+	 */
+	private function normalize_capability( mixed $capability, string $context ): string {
+		if ( null === $capability ) {
+			return self::DEFAULT_CAPABILITY;
+		}
+
+		if ( is_string( $capability ) ) {
+			// Not sanitize_key(): it lowercases, which would silently break a mixed-case custom capability.
+			$capability = trim( $capability );
+
+			if ( 1 === preg_match( '/^[A-Za-z0-9_-]+$/', $capability ) ) {
+				return $capability;
+			}
+		}
+
+		_doing_it_wrong(
+			__METHOD__,
+			sprintf(
+				'Invalid "capability" for Settings Hub entry "%1$s"; falling back to "%2$s".',
+				esc_html( $context ),
+				esc_html( self::DEFAULT_CAPABILITY )
+			),
+			'1.3.0'
+		);
+
+		return self::DEFAULT_CAPABILITY;
+	}
+
+	/**
+	 * Resolve the capability a user needs to see and open a plugin's page.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param array<string, mixed> $plugin Stored plugin data.
+	 *
+	 * @return string Capability name.
+	 */
+	private function get_plugin_capability( array $plugin ): string {
+		$slug       = (string) ( $plugin['slug'] ?? '' );
+		$capability = $this->normalize_capability( $plugin['capability'] ?? null, $slug );
+
+		/**
+		 * Filters the capability required to see and open a plugin's Settings Hub page.
+		 *
+		 * The capability gates the plugin's submenu item, dashboard card, tab and page.
+		 * An invalid return value falls back to manage_options.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param string               $capability Resolved capability.
+		 * @param string               $slug       Plugin slug.
+		 * @param array<string, mixed> $plugin     Stored plugin data.
+		 */
+		return $this->normalize_capability(
+			apply_filters( 'silverassist_settings_hub_plugin_capability', $capability, $slug, $plugin ),
+			$slug
+		);
+	}
+
+	/**
+	 * Resolve the capability required for the parent menu and the Dashboard.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return string Capability name.
+	 */
+	private function get_dashboard_capability(): string {
+		/**
+		 * Filters the capability required for the Silver Assist menu and its Dashboard.
+		 *
+		 * Plugins registered with a lower capability stay reachable without it: WordPress
+		 * links the top-level menu to the first submenu page the user may open. An invalid
+		 * return value falls back to manage_options.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param string $capability Capability, manage_options by default.
+		 */
+		return $this->normalize_capability(
+			apply_filters( 'silverassist_settings_hub_dashboard_capability', self::DEFAULT_CAPABILITY ),
+			self::PARENT_SLUG
+		);
+	}
+
+	/**
+	 * Get the registered plugins the current user may open.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return array<string, array{
+	 *     name: string,
+	 *     slug: string,
+	 *     callback: callable,
+	 *     capability: string,
+	 *     description?: string,
+	 *     version?: string,
+	 *     tab_title?: string,
+	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
+	 * }> Visible plugins, keyed by slug.
+	 */
+	private function get_visible_plugins(): array {
+		return array_filter(
+			$this->plugins,
+			fn( array $plugin ): bool => current_user_can( $this->get_plugin_capability( $plugin ) )
+		);
+	}
+
+	/**
 	 * Render the main dashboard page.
 	 *
 	 * Shows all registered plugins with cards containing name, description,
 	 * version, and a link to their settings page.
 	 */
 	public function render_dashboard(): void {
+		$plugins = $this->get_visible_plugins();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Silver Assist', 'silverassist-settings-hub' ); ?></h1>
@@ -347,7 +483,7 @@ final class SettingsHub {
 				<?php esc_html_e( 'Welcome to Silver Assist! Below are all your installed Silver Assist plugins.', 'silverassist-settings-hub' ); ?>
 			</p>
 
-			<?php if ( empty( $this->plugins ) ) : ?>
+			<?php if ( empty( $plugins ) ) : ?>
 				<div class="silverassist-empty-state">
 					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
 					<p>
@@ -356,7 +492,7 @@ final class SettingsHub {
 				</div>
 			<?php else : ?>
 				<div class="silverassist-dashboard-grid">
-					<?php foreach ( $this->plugins as $plugin ) : ?>
+					<?php foreach ( $plugins as $plugin ) : ?>
 						<?php $this->render_plugin_card( $plugin ); ?>
 					<?php endforeach; ?>
 				</div>
@@ -374,6 +510,7 @@ final class SettingsHub {
 	 *     @type string   $name        Plugin name.
 	 *     @type string   $slug        Plugin slug.
 	 *     @type callable $callback    Settings page callback.
+	 *     @type string   $capability  Capability required to open the plugin's page.
 	 *     @type string   $description Optional. Plugin description.
 	 *     @type string   $version     Optional. Plugin version.
 	 *     @type string   $tab_title   Optional. Tab title.
@@ -490,6 +627,7 @@ final class SettingsHub {
 	 *     @type string   $name        Plugin name.
 	 *     @type string   $slug        Plugin slug.
 	 *     @type callable $callback    Settings page callback.
+	 *     @type string   $capability  Capability required to open the plugin's page.
 	 *     @type string   $description Optional. Plugin description.
 	 *     @type string   $version     Optional. Plugin version.
 	 *     @type string   $tab_title   Optional. Tab title.
@@ -497,6 +635,15 @@ final class SettingsHub {
 	 * }
 	 */
 	private function render_plugin_page( array $plugin ): void {
+		// WordPress already gates the page through its submenu capability; this covers direct calls.
+		if ( ! current_user_can( $this->get_plugin_capability( $plugin ) ) ) {
+			wp_die(
+				esc_html__( 'You are not allowed to access this page.', 'silverassist-settings-hub' ),
+				esc_html__( 'Access denied', 'silverassist-settings-hub' ),
+				array( 'response' => 403 )
+			);
+		}
+
 		$version = $plugin['version'] ?? '';
 		?>
 		<div class="wrap">
@@ -522,19 +669,25 @@ final class SettingsHub {
 	 * @param string $active_slug Currently active plugin slug (empty for dashboard).
 	 */
 	private function render_tabs_navigation( string $active_slug ): void {
-		if ( empty( $this->plugins ) ) {
+		$plugins = $this->get_visible_plugins();
+
+		if ( empty( $plugins ) ) {
 			return;
 		}
 
 		$dashboard_url       = admin_url( 'admin.php?page=' . self::PARENT_SLUG );
 		$is_dashboard_active = empty( $active_slug );
+		// The Dashboard needs its own capability; for anyone else the tab would be a dead link.
+		$show_dashboard = current_user_can( $this->get_dashboard_capability() );
 		?>
 		<nav class="nav-tab-wrapper silverassist-hub-tabs">
-			<a href="<?php echo esc_url( $dashboard_url ); ?>" class="nav-tab <?php echo $is_dashboard_active ? 'nav-tab-active' : ''; ?>">
-				<?php esc_html_e( 'Dashboard', 'silverassist-settings-hub' ); ?>
-			</a>
+			<?php if ( $show_dashboard ) : ?>
+				<a href="<?php echo esc_url( $dashboard_url ); ?>" class="nav-tab <?php echo $is_dashboard_active ? 'nav-tab-active' : ''; ?>">
+					<?php esc_html_e( 'Dashboard', 'silverassist-settings-hub' ); ?>
+				</a>
+			<?php endif; ?>
 
-			<?php foreach ( $this->plugins as $plugin ) : ?>
+			<?php foreach ( $plugins as $plugin ) : ?>
 				<?php
 				$tab_url   = admin_url( 'admin.php?page=' . $plugin['slug'] );
 				$is_active = $plugin['slug'] === $active_slug;
@@ -555,6 +708,7 @@ final class SettingsHub {
 	 *     name: string,
 	 *     slug: string,
 	 *     callback: callable,
+	 *     capability: string,
 	 *     description?: string,
 	 *     version?: string,
 	 *     tab_title?: string,

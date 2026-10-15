@@ -315,6 +315,51 @@ class My_Plugin {
 }
 ```
 
+### Restrict a Plugin to a Capability
+
+Every hub page requires `manage_options` by default. A plugin can ask for a different capability with the `capability` argument (since 1.3.0):
+
+```php
+$hub->register_plugin(
+    'my-plugin',
+    'My Plugin',
+    array( $this, 'render_settings' ),
+    array(
+        'capability' => 'edit_posts',
+    )
+);
+```
+
+The capability decides who gets that plugin's submenu item, dashboard card, tab and page. Users who do not hold it see none of them, and a direct request for the page is answered with a 403.
+
+What stays on `manage_options`:
+
+- The "Silver Assist" menu and its Dashboard. The Dashboard tab is hidden for users who cannot open it, so nobody sees a link that ends in a 403. WordPress links the top-level menu item to the first page the user may open, so an editor who only holds one plugin's capability lands on that plugin's page.
+- Plugins that do not pass `capability`.
+
+Rules:
+
+- The value is a capability name made of letters, digits, underscores and hyphens. Anything else (empty, not a string, containing spaces) is reported with `_doing_it_wrong()` and the plugin falls back to `manage_options`, so a typo never opens a page wider than the default.
+- Capabilities are not ordered. A user who holds a custom capability but not `manage_options` sees only the plugins that ask for it, and an administrator who lacks a custom capability does not see that plugin.
+- Meta capabilities that need an object ID, such as `edit_post`, are not supported.
+- The hub's check and the check inside your settings callback are separate. If you lower the capability here, make the callback check the same one (the examples in this repository check `manage_options`), or the page opens and then refuses the user.
+- If the plugin saves its settings through the Settings API, WordPress checks `manage_options` again on `options.php`. Lower it for your option group with the `option_page_capability_{$option_group}` filter, otherwise the page loads but saving ends in a 403.
+
+Two filters change the capabilities. They run when the hub builds the menu on `admin_menu` and again when it renders, so add them before `admin_menu`:
+
+| Filter | Arguments | Use |
+| --- | --- | --- |
+| `silverassist_settings_hub_plugin_capability` | `$capability`, `$slug`, `$plugin` | Change the capability of one plugin |
+| `silverassist_settings_hub_dashboard_capability` | `$capability` | Change the capability of the menu and the Dashboard (`manage_options` by default) |
+
+```php
+// Let editors open the Dashboard as well.
+add_filter(
+    'silverassist_settings_hub_dashboard_capability',
+    static fn(): string => 'edit_posts'
+);
+```
+
 ### Using WordPress Action Hooks
 
 You can also add custom actions using the `silverassist_settings_hub_plugin_actions` hook:
@@ -373,6 +418,7 @@ Register a plugin with the settings hub.
   - `version` (string): Plugin version number
   - `tab_title` (string): Custom title for tab (defaults to `$name`)
   - `plugin_file` (string): Absolute path to the plugin's main file (recommended for multi-plugin setups)
+  - `capability` (string): Capability a user needs to see and open the plugin's page, `manage_options` by default (see [Restrict a Plugin to a Capability](#restrict-a-plugin-to-a-capability))
   - `actions` (array): Custom action buttons for the dashboard card
 
 **Action Button Structure**:
