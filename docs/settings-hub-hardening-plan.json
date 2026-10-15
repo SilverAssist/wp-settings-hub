@@ -328,7 +328,7 @@
       "id": "phase-4-code-hardening",
       "title": "Phase 4: Code hardening",
       "kind": "phase",
-      "status": "in-progress",
+      "status": "completed",
       "notes": "Branch: 48-phase-4-hardening. Each fix lands with a test that is red before and green after; record the red run in the log.",
       "findings": [
         "register_submenus() is not idempotent: firing admin_menu twice yields [silver-assist, early, early, late]. A plugin registered from admin_menu priority 10 gets no submenu in that request.",
@@ -388,11 +388,11 @@
         },
         {
           "id": "review",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "pr",
-          "status": "not-started"
+          "status": "completed"
         }
       ],
       "log": [
@@ -411,6 +411,10 @@
         {
           "date": "2026-10-15",
           "summary": "Decisions: a registration after admin_menu has finished is still stored and its menu is built immediately, but it raises _doing_it_wrong() (core already built the menu). The hook suffix check reads the prefix core stored in $admin_page_hooks (falling back to sanitize_title of the translated title) instead of assuming English. Button ids keep the documented form for the first button and get -2, -3 for repeats within one dashboard render. Slug sanitisation was NOT added: a slug is a menu slug and WordPress itself accepts arbitrary strings; the allowed characters are documented in Phase 5 instead. Consumer risk to check in Phase 7: a consumer test suite that fires admin_menu and then registers a plugin now sees the notice (WP_UnitTestCase fails on unexpected _doing_it_wrong)."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Merged as PR #59 (squash 928676b). Merged with admin override after all checks passed; the review requirement was the only blocker. The core-review pass was run late: the branch was pushed before it, and the pass was re-done manually over the changed docs and PR claims (no drift found), with 110 tests, phpcs and phpstan green on the branch before merge."
         }
       ]
     },
