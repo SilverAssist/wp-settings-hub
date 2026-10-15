@@ -528,7 +528,7 @@ final class SettingsHubTest extends TestCase {
 		$this->assertStringContainsString( "document.getElementById('" . $button_id . "')", $output, 'The script should target the button id' );
 		$this->assertSame( array( 'my-plugin' ), $received, 'The callback should run once and receive the plugin slug' );
 		$this->assertMatchesRegularExpression(
-			'/addEventListener\(\'click\', function\(\) \{\s*CALLBACK_OUTPUT_my-plugin\s*\}\);/',
+			'/addEventListener\(\'click\', function\(event\) \{\s*CALLBACK_OUTPUT_my-plugin\s*\}\);/',
 			$output,
 			'The callback output should sit inside the click listener'
 		);

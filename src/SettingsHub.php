@@ -64,6 +64,20 @@ final class SettingsHub {
 	private bool $parent_registered = false;
 
 	/**
+	 * Slugs whose submenu page has already been added, so a repeated pass never duplicates a row.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $registered_submenus = array();
+
+	/**
+	 * Button ids already printed during the current dashboard render.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $action_button_ids = array();
+
+	/**
 	 * Whether to render tabs for cross-plugin navigation.
 	 *
 	 * @var bool
@@ -102,7 +116,7 @@ final class SettingsHub {
 	 *
 	 * @var string
 	 */
-	private const PACKAGE_VERSION = '1.2.0';
+	private const PACKAGE_VERSION = '1.2.2';
 
 	/**
 	 * Private constructor to enforce singleton pattern.
@@ -129,6 +143,12 @@ final class SettingsHub {
 	 *
 	 * Automatically creates the parent "Silver Assist" menu if it doesn't exist,
 	 * and adds the plugin as a submenu item.
+	 *
+	 * Call it before `admin_menu` fires or from an `admin_menu` callback, at any
+	 * priority: a plugin registered while `admin_menu` is running, even after the
+	 * hub's own priority 5 pass, gets its submenu immediately. A registration after
+	 * `admin_menu` has finished is reported with `_doing_it_wrong()`, because core
+	 * has already built the menu for the request.
 	 *
 	 * @param string                                                      $slug     Unique plugin slug (e.g., 'post-revalidate').
 	 * @param string                                                      $name     Display name for the plugin.
@@ -169,8 +189,25 @@ final class SettingsHub {
 
 		$this->plugins[ $slug ] = $plugin;
 
-		// Hook into admin_menu to register menus.
+		// Hook into admin_menu to register menus (WordPress ignores the repeat of an identical callback).
 		add_action( 'admin_menu', array( $this, 'register_menus' ), 5 );
+
+		// admin_menu already started: the priority 5 pass may have run without this plugin, so build its menu now.
+		if ( did_action( 'admin_menu' ) > 0 ) {
+			if ( ! doing_action( 'admin_menu' ) ) {
+				_doing_it_wrong(
+					__METHOD__,
+					sprintf(
+						/* translators: %s: plugin slug. */
+						esc_html__( 'Plugin "%s" was registered after the admin_menu action finished. Register on or before admin_menu so its menu page exists in the request.', 'silverassist-settings-hub' ),
+						esc_html( $slug )
+					),
+					'1.3.0'
+				);
+			}
+
+			$this->register_menus();
+		}
 
 		// Register styles hook once (handle deduplication is done by WordPress).
 		if ( ! $this->styles_registered ) {
@@ -192,7 +229,9 @@ final class SettingsHub {
 	 * Register parent and submenu items.
 	 *
 	 * Called on admin_menu hook with priority 5 to ensure parent exists
-	 * before plugins register their submenus.
+	 * before plugins register their submenus, and again by register_plugin()
+	 * for a plugin that registers once admin_menu has started. Safe to call
+	 * repeatedly: each page is added once.
 	 *
 	 * @internal
 	 */
@@ -218,9 +257,7 @@ final class SettingsHub {
 	 * @internal
 	 */
 	public function enqueue_styles( string $hook_suffix ): void {
-		// Only load on Silver Assist pages (top-level and submenu pages).
-		if ( 'toplevel_page_' . self::PARENT_SLUG !== $hook_suffix
-			&& strpos( $hook_suffix, self::PARENT_SLUG ) === false ) {
+		if ( ! $this->is_hub_hook_suffix( $hook_suffix ) ) {
 			return;
 		}
 
@@ -236,6 +273,28 @@ final class SettingsHub {
 			array(),
 			self::PACKAGE_VERSION
 		);
+	}
+
+	/**
+	 * Whether a hook suffix belongs to a page of the hub's menu.
+	 *
+	 * Core names a submenu page `{sanitize_title( translated parent title )}_page_{slug}`
+	 * and stores that prefix in $admin_page_hooks, so the match reads the prefix from
+	 * there instead of assuming the English title. A plain substring check would also
+	 * accept look-alikes such as settings_page_silver-assist-security.
+	 *
+	 * @param string $hook_suffix The current admin page hook suffix.
+	 *
+	 * @return bool
+	 */
+	private function is_hub_hook_suffix( string $hook_suffix ): bool {
+		if ( 'toplevel_page_' . self::PARENT_SLUG === $hook_suffix ) {
+			return true;
+		}
+
+		$prefix = $GLOBALS['admin_page_hooks'][ self::PARENT_SLUG ] ?? sanitize_title( __( 'Silver Assist', 'silverassist-settings-hub' ) );
+
+		return is_string( $prefix ) && 0 === strpos( $hook_suffix, $prefix . '_page_' );
 	}
 
 	/**
@@ -330,6 +389,12 @@ final class SettingsHub {
 	 */
 	private function register_submenus(): void {
 		foreach ( $this->plugins as $plugin ) {
+			if ( isset( $this->registered_submenus[ $plugin['slug'] ] ) ) {
+				continue;
+			}
+
+			$this->registered_submenus[ $plugin['slug'] ] = true;
+
 			add_submenu_page(
 				self::PARENT_SLUG,
 				$plugin['name'],
@@ -471,6 +536,9 @@ final class SettingsHub {
 	 */
 	public function render_dashboard(): void {
 		$plugins = $this->get_visible_plugins();
+
+		// Button ids only need to be unique within one rendered page.
+		$this->action_button_ids = array();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Silver Assist', 'silverassist-settings-hub' ); ?></h1>
@@ -481,14 +549,14 @@ final class SettingsHub {
 
 			<p class="silverassist-dashboard-description">
 				<?php esc_html_e( 'Welcome to Silver Assist! Below are all your installed Silver Assist plugins.', 'silverassist-settings-hub' ); ?>
-				<?php if ( ! empty( $this->plugins ) ) : ?>
+				<?php if ( ! empty( $plugins ) ) : ?>
 					<span class="silverassist-dashboard-count">
 						<?php
 						echo esc_html(
 							sprintf(
 								/* translators: %d: number of registered Silver Assist plugins. */
-								_n( '%d plugin', '%d plugins', count( $this->plugins ), 'silverassist-settings-hub' ),
-								count( $this->plugins )
+								_n( '%d plugin', '%d plugins', count( $plugins ), 'silverassist-settings-hub' ),
+								count( $plugins )
 							)
 						);
 						?>
@@ -614,9 +682,11 @@ final class SettingsHub {
 			return;
 		}
 
-		// If callback is provided, render as button with AJAX.
+		// If a callback is provided, render a button. The callback runs now, while the page renders,
+		// and whatever JavaScript it prints becomes the body of the button's click handler,
+		// where `event` is the click event.
 		if ( isset( $action['callback'] ) && is_callable( $action['callback'] ) ) {
-			$button_id = 'sa-action-' . sanitize_key( $plugin_slug . '-' . $action['label'] );
+			$button_id = $this->unique_button_id( 'sa-action-' . sanitize_key( $plugin_slug . '-' . $action['label'] ) );
 			?>
 			<button 
 				type="button" 
@@ -627,12 +697,29 @@ final class SettingsHub {
 				<?php echo esc_html( $action['label'] ); ?>
 			</button>
 			<script type="text/javascript">
-				document.getElementById('<?php echo esc_js( $button_id ); ?>').addEventListener('click', function() {
+				document.getElementById('<?php echo esc_js( $button_id ); ?>').addEventListener('click', function(event) {
 					<?php call_user_func( $action['callback'], $plugin_slug ); ?>
 				});
 			</script>
 			<?php
 		}
+	}
+
+	/**
+	 * Make a button id unique within the page being rendered.
+	 *
+	 * The sanitize_key() call drops spaces, so the labels "Run Now" and "RunNow" would share an id.
+	 * The first button keeps the plain id; later ones get a numeric suffix.
+	 *
+	 * @param string $base_id Id built from the plugin slug and label.
+	 *
+	 * @return string
+	 */
+	private function unique_button_id( string $base_id ): string {
+		$this->action_button_ids[ $base_id ] = ( $this->action_button_ids[ $base_id ] ?? 0 ) + 1;
+		$count                               = $this->action_button_ids[ $base_id ];
+
+		return 1 === $count ? $base_id : $base_id . '-' . $count;
 	}
 
 	/**
@@ -776,8 +863,10 @@ final class SettingsHub {
 
 	/**
 	 * Prevent unserialization of the singleton instance.
+	 *
+	 * @throws \LogicException Always: a second instance would break the singleton.
 	 */
 	public function __wakeup(): void {
-		// Singleton - cannot unserialize.
+		throw new \LogicException( 'The Settings Hub singleton cannot be unserialized.' );
 	}
 }

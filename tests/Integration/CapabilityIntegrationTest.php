@@ -278,6 +278,7 @@ class CapabilityIntegrationTest extends TestCase {
 		$this->reset_hub();
 		$GLOBALS['menu']    = array();
 		$GLOBALS['submenu'] = array();
+		unset( $GLOBALS['wp_actions']['admin_menu'] ); // A new request has not fired admin_menu yet.
 
 		$this->hub()->register_plugin( 'consumer', 'Consumer', $callback, array(
 			'version'    => '1.0.0',
