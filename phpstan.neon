@@ -7,23 +7,20 @@ parameters:
         - vendor
         - coverage
         - .phpunit.cache
-        - tests/TestCase.php
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
         - vendor/php-stubs/wordpress-stubs
+    # The WordPress test library is not installed during analysis, so these stubs stand in for
+    # WP_UnitTestCase, tests_add_filter() and the ABSPATH and WP_PLUGIN_DIR constants.
+    scanFiles:
+        - tests/phpstan/wp-test-suite-stubs.php
+    # Every ignore must match something, so a fixed problem cannot leave a stale pattern behind.
     reportUnmatchedIgnoredErrors: true
     ignoreErrors:
-        # Defensive programming: checking types even when PHPDoc guarantees them.
         - '#Right side of && is always true#'
-        # WordPress uses associative arrays with dynamic structures that are properly validated at runtime.
         - '#does not accept non-empty-array#'
         - '#of function esc_html expects string#'
         - '#Cannot cast .* to string#'
         - '#Parameter .* expects string, .* given#'
         - '#Parameter .* expects callable#'
-        # WordPress core constants defined at runtime (not available in stubs).
-        - '#Constant (ABSPATH|WP_PLUGIN_DIR) not found#'
-        # WordPress Test Suite functions are only available when tests are run, not during static analysis
-        - '#Function (tests_add_filter|_manually_load_package) (has no return type specified|not found)\.#'
-        - '#Call to an undefined (static )?method .*::(setUp|tearDown|assert.*|factory|setExpectedIncorrectUsage)\(\)\.#'
