@@ -740,7 +740,7 @@ class Advanced_Plugin {
 
 ### JavaScript Implementation (`assets/js/update-check.js`)
 
-Complete, production-ready update check script with WordPress notifications:
+The script that goes with "Example 2" above (same `advancedPluginUpdateData` object and `advanced_plugin_check_updates` AJAX action):
 
 ```javascript
 /**
@@ -799,35 +799,35 @@ Complete, production-ready update check script with WordPress notifications:
      * Check for plugin updates
      * Called by Settings Hub action button
      */
-    window.yourPluginCheckUpdates = function() {
-        showAdminNotice(yourPluginUpdateData.strings.checking, "info");
+    window.advancedPluginCheckUpdates = function() {
+        showAdminNotice(advancedPluginUpdateData.strings.checking, "info");
 
         $.ajax({
-            url: yourPluginUpdateData.ajaxurl,
+            url: advancedPluginUpdateData.ajaxurl,
             type: "POST",
             data: {
-                action: "your_plugin_check_updates",
-                nonce: yourPluginUpdateData.nonce
+                action: "advanced_plugin_check_updates",
+                nonce: advancedPluginUpdateData.nonce
             },
             success: function(response) {
                 if (response.success && response.data) {
                     if (response.data.update_available) {
-                        showAdminNotice(yourPluginUpdateData.strings.available, "success");
+                        showAdminNotice(advancedPluginUpdateData.strings.available, "success");
                         setTimeout(function() {
-                            window.location.href = yourPluginUpdateData.updateUrl;
+                            window.location.href = advancedPluginUpdateData.updateUrl;
                         }, 2000);
                     } else {
-                        showAdminNotice(yourPluginUpdateData.strings.upToDate, "success");
+                        showAdminNotice(advancedPluginUpdateData.strings.upToDate, "success");
                     }
                 } else {
                     const errorMsg = response.data && response.data.message
                         ? response.data.message
-                        : yourPluginUpdateData.strings.error;
+                        : advancedPluginUpdateData.strings.error;
                     showAdminNotice(errorMsg, "error");
                 }
             },
             error: function(xhr, status, error) {
-                showAdminNotice(yourPluginUpdateData.strings.error, "error");
+                showAdminNotice(advancedPluginUpdateData.strings.error, "error");
                 console.error("Update check failed:", error);
             }
         });
