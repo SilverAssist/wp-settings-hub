@@ -68,7 +68,8 @@ final class My_Silver_Assist_Plugin {
 			[
 				'description' => 'This is my awesome Silver Assist plugin that does something great.',
 				'version'     => self::VERSION,
-				'tab_title'   => 'My Plugin', // Optional: custom tab title.
+				'tab_title'   => 'My Plugin', // Optional: label for the sidebar item and the tab.
+				'plugin_file' => __FILE__, // Should be the main plugin file, so the hub finds its stylesheet under vendor/.
 				// 'capability' => 'edit_posts', // Optional (1.3.0+): defaults to manage_options.
 				'actions'     => [
 					// Example: Add a "Check Updates" button (if using wp-github-updater).
@@ -185,9 +186,9 @@ final class My_Silver_Assist_Plugin {
 		$enabled = get_option( 'my_plugin_enabled', true );
 
 		?>
-		<div class="wrap silverassist-settings-page">
+		<div class="wrap">
 			<!-- Optional: Add a description or intro text -->
-			<div class="silverassist-settings-intro">
+			<div>
 				<p class="description">
 					<?php esc_html_e( 'Configure your plugin settings below. These settings control how the plugin behaves on your site.', 'my-plugin' ); ?>
 				</p>
@@ -209,7 +210,7 @@ final class My_Silver_Assist_Plugin {
 			</form>
 
 			<!-- Optional: Add additional content like documentation or status -->
-			<div class="silverassist-settings-footer">
+			<div>
 				<hr>
 				<h3><?php esc_html_e( 'Plugin Information', 'my-plugin' ); ?></h3>
 				<table class="form-table">
@@ -327,6 +328,7 @@ class Existing_Plugin {
             [
                 'description' => 'Plugin description',
                 'version'     => '1.0.0',
+                'plugin_file' => __FILE__, // Should be the main plugin file.
             ]
         );
     }
@@ -347,13 +349,14 @@ class Existing_Plugin {
  *    remove your old add_options_page() call to avoid duplicate menu items.
  *
  * 3. **Use Unique Slugs**: Ensure your plugin slug is unique across all
- *    Silver Assist plugins to avoid conflicts.
+ *    Silver Assist plugins to avoid conflicts. Registering a slug that is
+ *    already registered replaces the earlier registration silently.
  *
  * 4. **Version Display**: Include your plugin version in the registration args
- *    so it appears on the dashboard card.
+ *    so it appears on the dashboard card and in the page header.
  *
- * 5. **Tab Title**: You can use a shorter title for the tab if your plugin
- *    name is long. Use the 'tab_title' argument.
+ * 5. **Tab Title**: You can use a shorter label for the sidebar item and the tab
+ *    if your plugin name is long. Use the 'tab_title' argument.
  *
  * 6. **Settings API**: Continue using WordPress Settings API (register_setting,
  *    add_settings_section, etc.) as normal. The hub only handles menu creation.
@@ -449,6 +452,7 @@ class My_Plugin_With_Updates {
 			array(
 				'description' => __( 'My plugin with automatic GitHub updates', 'my-plugin' ),
 				'version'     => self::VERSION,
+				'plugin_file' => __FILE__, // Should be the main plugin file.
 				'actions'     => $actions,
 			)
 		);

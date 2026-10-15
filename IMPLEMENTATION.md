@@ -30,14 +30,14 @@ The `silverassist/wp-settings-hub` package provides a centralized admin menu sys
 - **Centralized Navigation**: All Silver Assist plugins in one menu
 - **Consistent UX**: Unified admin interface across plugins
 - **Reduced Clutter**: Single top-level menu instead of multiple
-- **Update Integration**: Built-in support for update check buttons
+- **Dashboard Actions**: Optional action buttons on the plugin's dashboard card (a link or a callback), for example for an update check
 - **Tab Navigation**: Optional tabs for cross-plugin navigation
 
 ### Requirements
 
-- **Package**: `silverassist/wp-settings-hub` v1.1.1+
+- **Package**: `silverassist/wp-settings-hub` ^1.2 (`plugin_file` support arrived in 1.2.0)
 - **WordPress**: 6.5+
-- **PHP**: 8.3+ (strict types required)
+- **PHP**: 8.2+ (strict types required)
 - **Capability**: `manage_options` by default; a plugin can pass its own `capability` (1.3.0+)
 
 ---
@@ -46,8 +46,10 @@ The `silverassist/wp-settings-hub` package provides a centralized admin menu sys
 
 ### Step 1: Add Composer Dependency
 
+The package is installed through a Composer `vcs` repository and a GitHub token. Follow the [README installation steps](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md#installation), then require it:
+
 ```bash
-composer require silverassist/wp-settings-hub
+composer require silverassist/wp-settings-hub:^1.2
 ```
 
 ### Step 2: Verify Autoloading
@@ -65,7 +67,7 @@ Ensure your `composer.json` includes proper PSR-4 autoloading:
     },
     "require": {
         "php": ">=8.2",
-        "silverassist/wp-settings-hub": "^1.1"
+        "silverassist/wp-settings-hub": "^1.2"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.7",
@@ -92,7 +94,7 @@ In your main plugin file:
  * Description: Your plugin description
  * Version: 1.0.0
  * Requires at least: 6.5
- * Requires PHP: 8.3
+ * Requires PHP: 8.2
  * Author: Silver Assist
  * Text Domain: your-plugin
  * Domain Path: /languages
@@ -107,6 +109,9 @@ namespace SilverAssist\YourPlugin;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+// Main plugin file, passed to the hub as 'plugin_file'
+define( 'YOUR_PLUGIN_FILE', __FILE__ );
 
 // Load Composer autoloader
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
@@ -165,6 +170,7 @@ class Plugin {
             [ $this, 'render_settings_page' ],               // Callback
             [
                 'description' => __( 'Plugin description', 'your-plugin' ),
+                'plugin_file' => YOUR_PLUGIN_FILE,               // Main plugin file (see Step 4)
                 'version'     => '1.0.0',
                 // 'capability' => 'edit_posts',             // Optional (1.3.0+), defaults to manage_options
             ]
@@ -387,6 +393,7 @@ class Simple_Plugin {
             [ $this, 'render_page' ],
             [
                 'description' => __( 'A simple plugin example', 'simple-plugin' ),
+                'plugin_file' => SIMPLE_PLUGIN_FILE, // Main plugin file, defined with define( 'SIMPLE_PLUGIN_FILE', __FILE__ ) in the main file
                 'version'     => self::VERSION,
             ]
         );
@@ -554,6 +561,7 @@ class Advanced_Plugin {
             [ $this, 'render_page' ],
             [
                 'description' => __( 'Advanced plugin with GitHub updates', 'advanced-plugin' ),
+                'plugin_file' => ADVANCED_PLUGIN_FILE, // Main plugin file, defined with define( 'ADVANCED_PLUGIN_FILE', __FILE__ ) in the main file
                 'version'     => self::VERSION,
                 'actions'     => $actions,
             ]
@@ -801,7 +809,7 @@ Complete, production-ready update check script with WordPress notifications:
 
 ### Recommended Directory Structure
 
-```
+```text
 your-plugin/
 ├── assets/
 │   ├── css/
@@ -858,49 +866,6 @@ Use CSS custom properties for consistency:
 }
 ```
 
-### Asset Minification (Optional)
-
-Example Grunt configuration:
-
-```javascript
-// Gruntfile.js
-module.exports = function(grunt) {
-    grunt.initConfig({
-        uglify: {
-            dist: {
-                files: {
-                    "assets/js/admin.min.js": ["assets/js/admin.js"],
-                    "assets/js/update-check.min.js": ["assets/js/update-check.js"]
-                }
-            }
-        },
-        cssmin: {
-            dist: {
-                files: {
-                    "assets/css/admin.min.css": ["assets/css/admin.css"]
-                }
-            }
-        },
-        watch: {
-            scripts: {
-                files: ["assets/js/*.js", "!assets/js/*.min.js"],
-                tasks: ["uglify"]
-            },
-            styles: {
-                files: ["assets/css/*.css", "!assets/css/*.min.css"],
-                tasks: ["cssmin"]
-            }
-        }
-    });
-
-    grunt.loadNpmTasks("grunt-contrib-uglify");
-    grunt.loadNpmTasks("grunt-contrib-cssmin");
-    grunt.loadNpmTasks("grunt-contrib-watch");
-
-    grunt.registerTask("default", ["uglify", "cssmin"]);
-};
-```
-
 ---
 
 ## Security & Permissions
@@ -940,119 +905,6 @@ public function render_settings_page(): void {
     }
 
     // Render page content
-}
-```
-
-### Nonce Verification
-
-Always use nonces for form submissions and AJAX requests:
-
-```php
-/**
- * Process form submission
- */
-public function process_form(): void {
-    // Check request method
-    if ( 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
-        return;
-    }
-
-    // Verify nonce
-    if ( ! check_admin_referer( 'your_plugin_action', 'your_plugin_nonce' ) ) {
-        wp_die(
-            esc_html__( 'Security check failed', 'your-plugin' ),
-            esc_html__( 'Security Error', 'your-plugin' ),
-            [ 'response' => 403 ]
-        );
-    }
-
-    // Verify capability
-    if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die(
-            esc_html__( 'Insufficient permissions', 'your-plugin' ),
-            esc_html__( 'Permission Error', 'your-plugin' ),
-            [ 'response' => 403 ]
-        );
-    }
-
-    // Process form data
-    $value = isset( $_POST['field_name'] ) 
-        ? sanitize_text_field( wp_unslash( $_POST['field_name'] ) )
-        : '';
-
-    update_option( 'your_plugin_option', $value );
-
-    // Redirect with success message
-    wp_safe_redirect(
-        add_query_arg(
-            [
-                'page' => 'your-plugin',
-                'settings-updated' => 'true',
-            ],
-            admin_url( 'admin.php' )
-        )
-    );
-    exit;
-}
-```
-
-### Input Sanitization
-
-Always sanitize user input:
-
-```php
-/**
- * Sanitization functions
- */
-class Sanitizer {
-    /**
-     * Sanitize text field
-     */
-    public static function text( $value ): string {
-        return sanitize_text_field( $value );
-    }
-
-    /**
-     * Sanitize textarea
-     */
-    public static function textarea( $value ): string {
-        return sanitize_textarea_field( $value );
-    }
-
-    /**
-     * Sanitize email
-     */
-    public static function email( $value ): string {
-        return sanitize_email( $value );
-    }
-
-    /**
-     * Sanitize URL
-     */
-    public static function url( $value ): string {
-        return esc_url_raw( $value );
-    }
-
-    /**
-     * Sanitize integer
-     */
-    public static function int( $value ): int {
-        return absint( $value );
-    }
-
-    /**
-     * Sanitize boolean
-     */
-    public static function bool( $value ): bool {
-        return (bool) $value;
-    }
-
-    /**
-     * Sanitize array of strings
-     */
-    public static function array_text( array $values ): array {
-        return array_map( 'sanitize_text_field', $values );
-    }
 }
 ```
 
@@ -1107,12 +959,6 @@ class Sanitizer {
   - [ ] XSS prevention (proper escaping)
   - [ ] CSRF protection (nonces)
 
-- [ ] **Translations**
-  - [ ] All strings use proper i18n functions
-  - [ ] Text domain matches plugin slug
-  - [ ] POT file generates correctly
-  - [ ] Strings display correctly in different languages
-
 - [ ] **Code Quality**
   - [ ] PHPCS passes (WordPress Coding Standards)
   - [ ] PHPStan passes (level 8)
@@ -1120,20 +966,12 @@ class Sanitizer {
   - [ ] No JavaScript console errors
   - [ ] Strict types declared in all files
 
-### Browser Testing
-
-Test in major browsers:
-
-- [ ] Chrome (latest)
-- [ ] Firefox (latest)
-- [ ] Safari (latest)
-- [ ] Edge (latest)
-
 ### WordPress Environment Testing
 
 - [ ] WordPress 6.5
 - [ ] WordPress 6.6
 - [ ] WordPress latest
+- [ ] PHP 8.2
 - [ ] PHP 8.3
 - [ ] PHP 8.4
 
@@ -1166,7 +1004,7 @@ Test in major browsers:
 
 **Recommended Structure:**
 
-```
+```text
 ✅ One main Plugin class (singleton pattern)
 ✅ Separate Admin class for admin functionality
 ✅ Private methods for internal logic
@@ -1188,66 +1026,12 @@ define( 'YOUR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // Use constants consistently
 $hub->register_plugin( 'slug', 'Name', $callback, [
-    'version' => YOUR_PLUGIN_VERSION,  // ✅ Use constant
+    'version'     => YOUR_PLUGIN_VERSION,  // ✅ Use constant
+    'plugin_file' => YOUR_PLUGIN_FILE,
 ] );
 
 wp_enqueue_script( 'script', $url, [], YOUR_PLUGIN_VERSION, true );
 wp_enqueue_style( 'style', $url, [], YOUR_PLUGIN_VERSION );
-```
-
-### Translation Best Practices
-
-```php
-// ✅ CORRECT - Translatable strings
-__( 'Text', 'your-plugin' )           // Translate and return
-_e( 'Text', 'your-plugin' )           // Translate and echo
-esc_html__( 'Text', 'your-plugin' )   // Translate, escape HTML, return
-esc_html_e( 'Text', 'your-plugin' )   // Translate, escape HTML, echo
-esc_attr__( 'Text', 'your-plugin' )   // Translate, escape attr, return
-esc_attr_e( 'Text', 'your-plugin' )   // Translate, escape attr, echo
-
-// ❌ INCORRECT - Hardcoded strings
-echo "Settings saved successfully";
-$message = "Error occurred";
-```
-
-### Error Handling
-
-```php
-/**
- * Proper error handling pattern
- */
-try {
-    // Check if Hub is available
-    if ( ! class_exists( SettingsHub::class ) ) {
-        throw new \Exception( 'Settings Hub not available' );
-    }
-
-    $hub = SettingsHub::get_instance();
-    $hub->register_plugin( ... );
-
-} catch ( \Exception $e ) {
-    // Log error for debugging
-    error_log(
-        sprintf(
-            'Plugin registration failed: %s in %s on line %d',
-            $e->getMessage(),
-            $e->getFile(),
-            $e->getLine()
-        )
-    );
-
-    // Fallback to standalone menu
-    add_options_page( ... );
-
-    // Optionally show admin notice
-    add_action( 'admin_notices', function() use ( $e ) {
-        printf(
-            '<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
-            esc_html__( 'Settings Hub integration failed. Using standalone menu.', 'your-plugin' )
-        );
-    } );
-}
 ```
 
 ### Performance Optimization
@@ -1293,7 +1077,7 @@ public function enqueue_assets( string $hook_suffix ): void {
 
 ### Documentation
 
-- **Settings Hub Package**: https://packagist.org/packages/silverassist/wp-settings-hub
+- **Settings Hub Package**: https://github.com/SilverAssist/wp-settings-hub
 - **WordPress Plugin API**: https://developer.wordpress.org/plugins/
 - **WordPress Coding Standards**: https://developer.wordpress.org/coding-standards/
 - **WordPress i18n**: https://developer.wordpress.org/plugins/internationalization/
@@ -1303,32 +1087,10 @@ public function enqueue_assets( string $hook_suffix ): void {
 
 For issues or questions:
 - Review this guide for common errors and solutions
-- Check Settings Hub package documentation
-- Review integration-guide.php for additional examples
+- Read the [README](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md) for the API reference
+- Review [integration-guide.php](https://github.com/SilverAssist/wp-settings-hub/blob/main/integration-guide.php) for additional examples
 - Contact Silver Assist development team
 
 ---
 
-## Changelog
-
-### v1.1.0 (Current)
-- Added comprehensive error documentation based on real implementations
-- Added complete working examples with wp-github-updater integration
-- Added security and permissions section
-- Added testing checklist
-- Added asset loading configuration
-- Updated all examples to use Settings Hub v1.1.1+ patterns
-
-### v1.0.0 (Initial)
-- Initial implementation guide
-- Basic integration examples
-- Settings API integration
-- WordPress Coding Standards compliance
-
----
-
 **License**: PolyForm-Noncommercial-1.0.0
-
-**Last Updated**: October 10, 2025
-
-**Package Version**: v1.1.1+
