@@ -69,6 +69,7 @@ final class My_Silver_Assist_Plugin {
 				'description' => 'This is my awesome Silver Assist plugin that does something great.',
 				'version'     => self::VERSION,
 				'tab_title'   => 'My Plugin', // Optional: custom tab title.
+				// 'capability' => 'edit_posts', // Optional (1.3.0+): defaults to manage_options.
 				'actions'     => [
 					// Example: Add a "Check Updates" button (if using wp-github-updater).
 					[
