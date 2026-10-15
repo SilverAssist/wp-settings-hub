@@ -1,7 +1,10 @@
 /**
  * Settings Hub - Dashboard Styles
  *
- * Card-based design for the Silver Assist Settings Hub dashboard.
+ * Border-first, monochrome design for the Silver Assist Settings Hub.
+ * The visual language is documented in docs/design-system.md; change the
+ * tokens there and here together.
+ *
  * This CSS is registered with a unique handle so WordPress deduplicates
  * the enqueue regardless of how many plugins include the package.
  *
@@ -11,83 +14,172 @@
  */
 
 /* ==========================================================================
-	1.0 - CSS Custom Properties
+	1.0 - Design Tokens
 	========================================================================== */
 
 :root {
-	/* Colors - Primary */
-	--silver-hub-color-primary: #0073aa;
-	--silver-hub-color-primary-dark: #005177;
-	--silver-hub-color-primary-light: #e8f4f8;
+	/* Brand navy (Silver Assist): the primary action and the active tab text */
+	--silver-hub-navy: #003073;
+	--silver-hub-navy-deep: #001b40;
 
-	/* Colors - Semantic */
-	--silver-hub-color-success: #28a745;
-	--silver-hub-color-warning: #ffc107;
-	--silver-hub-color-danger: #dc3545;
+	/* Neutral scale (text, borders, surfaces) */
+	--silver-hub-charcoal: #171717;
+	--silver-hub-slate: #404040;
+	--silver-hub-steel: #525252;
+	--silver-hub-fog: #737373;
+	--silver-hub-smoke: #d4d4d4;
+	--silver-hub-ash: #e5e5e5;
+	--silver-hub-paper: #f5f5f5;
+	--silver-hub-white: #fff;
 
-	/* Colors - Neutral */
-	--silver-hub-color-white: #fff;
-	--silver-hub-color-gray-100: #f8f9fa;
-	--silver-hub-color-gray-200: #e9ecef;
-	--silver-hub-color-gray-300: #e5e5e5;
-	--silver-hub-color-gray-600: #666;
-	--silver-hub-color-gray-800: #333;
+	/* Accent: the brand teal, for the keyboard focus ring only. Pale blue marks the active tab. */
+	--silver-hub-teal: #2d8ab3;
+	--silver-hub-blue-tint: #dbeafe;
 
-	/* Colors - Status */
-	--silver-hub-success-bg: #d4edda;
-	--silver-hub-success-text: #155724;
-	--silver-hub-success-border: #c3e6cb;
+	/* Status tints (small surfaces only: badges, notices) */
+	--silver-hub-green-tint: #dcfce7;
+	--silver-hub-green-text: #166534;
 
-	/* Colors - Background */
-	--silver-hub-bg-primary: #ffffff;
-	--silver-hub-bg-secondary: #f0f0f1;
+	/* Semantic roles */
+	--silver-hub-text: var(--silver-hub-charcoal);
+	--silver-hub-text-muted: var(--silver-hub-steel);
+	--silver-hub-text-subtle: var(--silver-hub-fog);
+	--silver-hub-surface: var(--silver-hub-white);
+	--silver-hub-surface-alt: var(--silver-hub-paper);
+	--silver-hub-border: var(--silver-hub-ash);
+	--silver-hub-border-strong: var(--silver-hub-smoke);
+	--silver-hub-action: var(--silver-hub-navy);
+	--silver-hub-action-hover: var(--silver-hub-navy-deep);
+	--silver-hub-action-text: var(--silver-hub-white);
+	--silver-hub-focus: var(--silver-hub-teal);
 
-	/* Spacing */
+	/* Spacing (4px base unit) */
+	--silver-hub-space-1: 4px;
+	--silver-hub-space-2: 8px;
+	--silver-hub-space-3: 12px;
+	--silver-hub-space-4: 16px;
+	--silver-hub-space-5: 20px;
+	--silver-hub-space-6: 24px;
+	--silver-hub-space-8: 32px;
+	--silver-hub-space-12: 48px;
+
+	/* Typography: inherits the wp-admin font, no webfonts are loaded */
+	--silver-hub-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+	--silver-hub-text-caption: 11px;
+	--silver-hub-text-small: 12px;
+	--silver-hub-text-body: 14px;
+	--silver-hub-text-lead: 16px;
+	--silver-hub-text-title: 20px;
+	--silver-hub-weight-regular: 400;
+	--silver-hub-weight-medium: 500;
+	--silver-hub-weight-semibold: 600;
+
+	/* Radius vocabulary: pill, card, button, input. Nothing else. */
+	--silver-hub-radius-input: 6px;
+	--silver-hub-radius-button: 8px;
+	--silver-hub-radius-card: 12px;
+	--silver-hub-radius-pill: 9999px;
+
+	/* Elevation: borders do the work, shadows are the exception */
+	--silver-hub-shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	--silver-hub-shadow-ring: 0 0 0 4px rgba(0, 0, 0, 0.1);
+
+	/* Motion */
+	--silver-hub-transition-fast: 0.15s ease;
+
+	/* Layout */
+	--silver-hub-max-width: 1200px;
+
+	/* Legacy aliases (pre-1.3 names). Kept so consumer plugins that read
+		them keep working; prefer the tokens above in new code. */
+	--silver-hub-color-primary: var(--silver-hub-action);
+	--silver-hub-color-primary-dark: var(--silver-hub-navy-deep);
+	--silver-hub-color-primary-light: var(--silver-hub-blue-tint);
+	--silver-hub-color-success: #16a34a;
+	--silver-hub-color-warning: #ca8a04;
+	--silver-hub-color-danger: #dc2626;
+	--silver-hub-color-white: var(--silver-hub-white);
+	--silver-hub-color-gray-100: var(--silver-hub-paper);
+	--silver-hub-color-gray-200: var(--silver-hub-ash);
+	--silver-hub-color-gray-300: var(--silver-hub-ash);
+	--silver-hub-color-gray-600: var(--silver-hub-steel);
+	--silver-hub-color-gray-800: var(--silver-hub-charcoal);
+	--silver-hub-success-bg: var(--silver-hub-green-tint);
+	--silver-hub-success-text: var(--silver-hub-green-text);
+	--silver-hub-success-border: var(--silver-hub-green-tint);
+	--silver-hub-bg-primary: var(--silver-hub-surface);
+	--silver-hub-bg-secondary: var(--silver-hub-surface-alt);
 	--silver-hub-spacing-xs: 2px;
-	--silver-hub-spacing-sm: 4px;
-	--silver-hub-spacing-md: 8px;
-	--silver-hub-spacing-lg: 12px;
-	--silver-hub-spacing-xl: 16px;
-	--silver-hub-spacing-2xl: 20px;
-	--silver-hub-spacing-3xl: 24px;
-
-	/* Typography */
-	--silver-hub-font-size-xs: 11px;
-	--silver-hub-font-size-sm: 12px;
+	--silver-hub-spacing-sm: var(--silver-hub-space-1);
+	--silver-hub-spacing-md: var(--silver-hub-space-2);
+	--silver-hub-spacing-lg: var(--silver-hub-space-3);
+	--silver-hub-spacing-xl: var(--silver-hub-space-4);
+	--silver-hub-spacing-2xl: var(--silver-hub-space-5);
+	--silver-hub-spacing-3xl: var(--silver-hub-space-6);
+	--silver-hub-font-size-xs: var(--silver-hub-text-caption);
+	--silver-hub-font-size-sm: var(--silver-hub-text-small);
 	--silver-hub-font-size-base: 13px;
-	--silver-hub-font-size-md: 14px;
-	--silver-hub-font-size-lg: 16px;
+	--silver-hub-font-size-md: var(--silver-hub-text-body);
+	--silver-hub-font-size-lg: var(--silver-hub-text-lead);
 	--silver-hub-font-size-xl: 18px;
-	--silver-hub-font-weight-normal: 400;
-	--silver-hub-font-weight-medium: 500;
-	--silver-hub-font-weight-semibold: 600;
-
-	/* Borders & Radius */
-	--silver-hub-border-color: #e5e5e5;
-	--silver-hub-border-color-light: #f0f0f0;
-	--silver-hub-radius-md: 8px;
-	--silver-hub-radius-lg: 12px;
-	--silver-hub-radius-pill: 50px;
-
-	/* Shadows */
-	--silver-hub-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
-	--silver-hub-shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
-
-	/* Transitions */
-	--silver-hub-transition-fast: 0.2s ease;
-
-	/* Fluid spacing */
-	--silver-hub-fluid-spacing: clamp(16px, 3vw, 24px);
+	--silver-hub-font-weight-normal: var(--silver-hub-weight-regular);
+	--silver-hub-font-weight-medium: var(--silver-hub-weight-medium);
+	--silver-hub-font-weight-semibold: var(--silver-hub-weight-semibold);
+	--silver-hub-border-color: var(--silver-hub-border);
+	--silver-hub-border-color-light: var(--silver-hub-paper);
+	--silver-hub-radius-md: var(--silver-hub-radius-button);
+	--silver-hub-radius-lg: var(--silver-hub-radius-card);
+	--silver-hub-shadow-card: none;
+	--silver-hub-shadow-card-hover: var(--silver-hub-shadow-subtle);
+	--silver-hub-fluid-spacing: var(--silver-hub-space-5);
 }
 
 /* ==========================================================================
-	2.0 - Dashboard Description
+	2.0 - Page Header
 	========================================================================== */
 
+.wrap > h1 {
+	color: var(--silver-hub-text);
+	font-weight: var(--silver-hub-weight-medium);
+	letter-spacing: -0.01em;
+}
+
+/* Page h1 version badge */
+.wrap > h1 .version-badge {
+	display: inline-block;
+	padding: 2px var(--silver-hub-space-2);
+	background: var(--silver-hub-surface-alt);
+	color: var(--silver-hub-text-muted);
+	border: 1px solid var(--silver-hub-border);
+	border-radius: var(--silver-hub-radius-pill);
+	font-family: var(--silver-hub-font-mono);
+	font-size: var(--silver-hub-text-caption);
+	font-weight: var(--silver-hub-weight-medium);
+	line-height: 1.5;
+	vertical-align: middle;
+	margin-inline-start: var(--silver-hub-space-2);
+}
+
 .silverassist-dashboard-description {
-	font-size: var(--silver-hub-font-size-md);
-	color: var(--silver-hub-color-gray-600);
-	margin-block-end: var(--silver-hub-spacing-2xl);
+	max-width: 65ch;
+	font-size: var(--silver-hub-text-body);
+	line-height: 1.5;
+	color: var(--silver-hub-text-muted);
+	margin-block: 0 var(--silver-hub-space-5);
+}
+
+.silverassist-dashboard-count {
+	display: inline-block;
+	margin-inline-start: var(--silver-hub-space-1);
+	padding: 0 var(--silver-hub-space-2);
+	background: var(--silver-hub-surface);
+	color: var(--silver-hub-text-muted);
+	border: 1px solid var(--silver-hub-border);
+	border-radius: var(--silver-hub-radius-pill);
+	font-size: var(--silver-hub-text-small);
+	font-weight: var(--silver-hub-weight-medium);
+	line-height: 1.6;
+	white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -96,10 +188,10 @@
 
 .silverassist-dashboard-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-	gap: var(--silver-hub-spacing-2xl);
-	margin-block-start: var(--silver-hub-spacing-2xl);
-	container-type: inline-size;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+	gap: var(--silver-hub-space-4);
+	max-width: var(--silver-hub-max-width);
+	margin-block-start: var(--silver-hub-space-5);
 }
 
 /* ==========================================================================
@@ -107,20 +199,22 @@
 	========================================================================== */
 
 .silverassist-plugin-card {
-	background: var(--silver-hub-bg-primary);
-	border: 1px solid var(--silver-hub-border-color);
-	border-radius: var(--silver-hub-radius-lg);
-	padding: var(--silver-hub-fluid-spacing);
-	box-shadow: var(--silver-hub-shadow-card);
-	transition: box-shadow var(--silver-hub-transition-fast),
-				transform var(--silver-hub-transition-fast);
 	display: flex;
 	flex-direction: column;
+	gap: var(--silver-hub-space-4);
+	padding: var(--silver-hub-space-5);
+	background: var(--silver-hub-surface);
+	border: 1px solid var(--silver-hub-border);
+	border-radius: var(--silver-hub-radius-card);
+	color: var(--silver-hub-text);
+	transition: border-color var(--silver-hub-transition-fast),
+				box-shadow var(--silver-hub-transition-fast);
 }
 
-.silverassist-plugin-card:hover {
-	box-shadow: var(--silver-hub-shadow-card-hover);
-	transform: translateY(-2px);
+.silverassist-plugin-card:hover,
+.silverassist-plugin-card:focus-within {
+	border-color: var(--silver-hub-border-strong);
+	box-shadow: var(--silver-hub-shadow-subtle);
 }
 
 /* --------------------------------------------------------------------------
@@ -131,44 +225,38 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	gap: var(--silver-hub-spacing-md);
-	margin-block-end: var(--silver-hub-spacing-lg);
-	padding-block-end: var(--silver-hub-spacing-md);
-	border-block-end: 1px solid var(--silver-hub-border-color-light);
+	gap: var(--silver-hub-space-3);
 }
 
 .silverassist-plugin-card .card-header h2 {
-	margin: 0;
-	font-size: var(--silver-hub-font-size-lg);
-	font-weight: var(--silver-hub-font-weight-semibold);
-	line-height: 1.4;
+	display: flex;
+	align-items: center;
+	gap: var(--silver-hub-space-3);
 	flex: 1;
-	color: var(--silver-hub-color-gray-800);
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	color: var(--silver-hub-text);
+	font-size: var(--silver-hub-text-lead);
+	font-weight: var(--silver-hub-weight-semibold);
+	line-height: 1.4;
 }
 
+/* Icon tile: the dashicon sits on a bordered square, not on the page. */
 .silverassist-plugin-card .card-header .dashicons {
-	color: var(--silver-hub-color-primary);
-	font-size: 20px;
-	width: 20px;
-	height: 20px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	box-sizing: border-box;
+	width: 32px;
+	height: 32px;
+	font-size: 18px;
+	color: var(--silver-hub-text);
+	background: var(--silver-hub-surface-alt);
+	border: 1px solid var(--silver-hub-border);
+	border-radius: var(--silver-hub-radius-button);
 }
-
-/* Page h1 version badge */
-.wrap > h1 .version-badge {
-	display: inline-block;
-	padding: var(--silver-hub-spacing-xs) var(--silver-hub-spacing-md);
-	background: var(--silver-hub-success-bg);
-	color: var(--silver-hub-success-text);
-	border: 1px solid var(--silver-hub-success-border);
-	border-radius: var(--silver-hub-radius-pill);
-	font-size: var(--silver-hub-font-size-xs);
-	font-weight: var(--silver-hub-font-weight-semibold);
-	text-transform: uppercase;
-	letter-spacing: 0.3px;
-	vertical-align: middle;
-	margin-left: var(--silver-hub-spacing-md);
-}
-
 
 /* --------------------------------------------------------------------------
 	4.2 - Version Badge
@@ -176,14 +264,16 @@
 
 .silverassist-version-badge {
 	display: inline-block;
-	padding: var(--silver-hub-spacing-xs) var(--silver-hub-spacing-md);
-	background: var(--silver-hub-success-bg);
-	color: var(--silver-hub-success-text);
-	border: 1px solid var(--silver-hub-success-border);
+	flex: none;
+	padding: 2px var(--silver-hub-space-2);
+	background: var(--silver-hub-surface-alt);
+	color: var(--silver-hub-text-muted);
+	border: 1px solid var(--silver-hub-border);
 	border-radius: var(--silver-hub-radius-pill);
-	font-size: var(--silver-hub-font-size-xs);
-	font-weight: var(--silver-hub-font-weight-semibold);
-	letter-spacing: 0.3px;
+	font-family: var(--silver-hub-font-mono);
+	font-size: var(--silver-hub-text-caption);
+	font-weight: var(--silver-hub-weight-medium);
+	line-height: 1.5;
 	white-space: nowrap;
 }
 
@@ -194,15 +284,15 @@
 .silverassist-plugin-card .card-content {
 	display: flex;
 	flex-direction: column;
-	gap: var(--silver-hub-spacing-md);
+	gap: var(--silver-hub-space-2);
 	flex: 1;
 }
 
 .silverassist-plugin-card .card-description {
 	margin: 0;
-	color: var(--silver-hub-color-gray-600);
-	font-size: var(--silver-hub-font-size-base);
-	line-height: 1.6;
+	color: var(--silver-hub-text-muted);
+	font-size: var(--silver-hub-text-body);
+	line-height: 1.5;
 }
 
 /* --------------------------------------------------------------------------
@@ -211,51 +301,98 @@
 
 .silverassist-plugin-card .plugin-actions {
 	display: flex;
-	gap: var(--silver-hub-spacing-md);
 	flex-wrap: wrap;
+	gap: var(--silver-hub-space-2);
 	margin-block-start: auto;
-	padding-block-start: var(--silver-hub-spacing-xl);
+	padding-block-start: var(--silver-hub-space-2);
 }
 
 .silverassist-plugin-card .plugin-actions .button {
-	border-radius: var(--silver-hub-radius-md);
-	font-weight: var(--silver-hub-font-weight-medium);
-	transition: all var(--silver-hub-transition-fast);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 32px;
+	padding: 0 var(--silver-hub-space-3);
+	background: var(--silver-hub-surface);
+	color: var(--silver-hub-text);
+	border: 1px solid var(--silver-hub-border);
+	border-radius: var(--silver-hub-radius-button);
+	box-shadow: var(--silver-hub-shadow-subtle);
+	font-size: var(--silver-hub-text-body);
+	font-weight: var(--silver-hub-weight-medium);
+	line-height: 1.4;
+	transition: background var(--silver-hub-transition-fast),
+				border-color var(--silver-hub-transition-fast);
 }
 
+.silverassist-plugin-card .plugin-actions .button:hover {
+	background: var(--silver-hub-surface-alt);
+	border-color: var(--silver-hub-border-strong);
+	color: var(--silver-hub-text);
+}
+
+/* One filled action per card: Configure. */
 .silverassist-plugin-card .plugin-actions .button-primary {
-	background: var(--silver-hub-color-primary);
-	border-color: var(--silver-hub-color-primary-dark);
+	background: var(--silver-hub-action);
+	border-color: var(--silver-hub-action);
+	color: var(--silver-hub-action-text);
 }
 
 .silverassist-plugin-card .plugin-actions .button-primary:hover {
-	background: var(--silver-hub-color-primary-dark);
+	background: var(--silver-hub-action-hover);
+	border-color: var(--silver-hub-action-hover);
+	color: var(--silver-hub-action-text);
+}
+
+/* Focus ring: visible on keyboard focus for every interactive hub element. */
+.silverassist-plugin-card .plugin-actions .button:focus-visible,
+.silverassist-hub-tabs .nav-tab:focus-visible {
+	outline: 2px solid var(--silver-hub-focus);
+	outline-offset: 2px;
+	box-shadow: none;
 }
 
 /* ==========================================================================
-	5.0 - Tabs Navigation Enhancement
+	5.0 - Tabs Navigation
 	========================================================================== */
 
+/* WordPress draws .nav-tab-wrapper as a bottom-bordered tab strip. The hub
+	restyles it as a pill group: ghost items, soft-blue active state. */
 .silverassist-hub-tabs.nav-tab-wrapper {
-	margin-block-end: var(--silver-hub-spacing-2xl);
-	border-block-end-color: var(--silver-hub-border-color);
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--silver-hub-space-1);
+	margin-block: 0 var(--silver-hub-space-5);
+	padding: 0 0 var(--silver-hub-space-4);
+	border-block-end: 1px solid var(--silver-hub-border);
 }
 
 .silverassist-hub-tabs .nav-tab {
-	border-radius: var(--silver-hub-radius-md) var(--silver-hub-radius-md) 0 0;
-	padding: var(--silver-hub-spacing-md) var(--silver-hub-spacing-xl);
-	font-weight: var(--silver-hub-font-weight-medium);
+	float: none;
+	margin: 0;
+	padding: 6px var(--silver-hub-space-4);
+	background: transparent;
+	color: var(--silver-hub-slate);
+	border: 1px solid transparent;
+	border-radius: var(--silver-hub-radius-pill);
+	font-size: var(--silver-hub-text-body);
+	font-weight: var(--silver-hub-weight-medium);
+	line-height: 1.5;
 	transition: background var(--silver-hub-transition-fast),
 				color var(--silver-hub-transition-fast);
 }
 
 .silverassist-hub-tabs .nav-tab:hover:not(.nav-tab-active) {
-	background: var(--silver-hub-color-gray-100);
+	background: var(--silver-hub-surface-alt);
+	color: var(--silver-hub-text);
 }
 
-.silverassist-hub-tabs .nav-tab-active {
-	border-block-end-color: var(--silver-hub-bg-primary);
-	font-weight: var(--silver-hub-font-weight-semibold);
+.silverassist-hub-tabs .nav-tab-active,
+.silverassist-hub-tabs .nav-tab-active:hover {
+	background: var(--silver-hub-blue-tint);
+	color: var(--silver-hub-navy);
+	border-color: transparent;
+	font-weight: var(--silver-hub-weight-semibold);
 }
 
 /* ==========================================================================
@@ -263,57 +400,73 @@
 	========================================================================== */
 
 .silverassist-empty-state {
+	max-width: var(--silver-hub-max-width);
+	margin-block-start: var(--silver-hub-space-5);
+	padding: var(--silver-hub-space-12) var(--silver-hub-space-6);
 	text-align: center;
-	padding: var(--silver-hub-spacing-3xl);
-	background: var(--silver-hub-bg-primary);
-	border: 1px dashed var(--silver-hub-border-color);
-	border-radius: var(--silver-hub-radius-lg);
-	margin-block-start: var(--silver-hub-spacing-2xl);
+	background: var(--silver-hub-surface);
+	border: 1px dashed var(--silver-hub-border-strong);
+	border-radius: var(--silver-hub-radius-card);
 }
 
 .silverassist-empty-state .dashicons {
-	font-size: 48px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
 	width: 48px;
 	height: 48px;
-	color: var(--silver-hub-color-gray-200);
-	margin-block-end: var(--silver-hub-spacing-lg);
+	margin-block-end: var(--silver-hub-space-3);
+	font-size: 24px;
+	color: var(--silver-hub-text-subtle);
+	background: var(--silver-hub-surface-alt);
+	border: 1px solid var(--silver-hub-border);
+	border-radius: var(--silver-hub-radius-card);
 }
 
 .silverassist-empty-state p {
-	color: var(--silver-hub-color-gray-600);
-	font-size: var(--silver-hub-font-size-md);
 	margin: 0;
+	color: var(--silver-hub-text);
+	font-size: var(--silver-hub-text-body);
+	font-weight: var(--silver-hub-weight-medium);
+}
+
+.silverassist-empty-state .silverassist-empty-state-hint {
+	margin-block-start: var(--silver-hub-space-1);
+	color: var(--silver-hub-text-muted);
+	font-weight: var(--silver-hub-weight-regular);
 }
 
 /* ==========================================================================
-	7.0 - Responsive
+	7.0 - Responsive & Motion
 	========================================================================== */
 
-/*
- * Container Queries
- *
- * Browser support: Chrome 105+, Safari 16+, Firefox 110+
- * Graceful degradation: Falls back to media queries below for older browsers.
- * These browsers are now widely adopted and considered standard.
- */
-@container (max-width: 640px) {
-	.silverassist-dashboard-grid {
-		grid-template-columns: 1fr;
-	}
-}
-
 @media (max-width: 782px) {
-	.silverassist-dashboard-grid {
-		grid-template-columns: 1fr;
-		gap: var(--silver-hub-spacing-xl);
-	}
-
 	.silverassist-plugin-card .plugin-actions {
 		flex-direction: column;
 	}
 
 	.silverassist-plugin-card .plugin-actions .button {
 		width: 100%;
-		text-align: center;
+		min-height: 40px;
+	}
+
+	.silverassist-hub-tabs.nav-tab-wrapper {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.silverassist-hub-tabs .nav-tab {
+		flex: none;
+		white-space: nowrap;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.silverassist-plugin-card,
+	.silverassist-plugin-card .plugin-actions .button,
+	.silverassist-hub-tabs .nav-tab {
+		transition: none;
 	}
 }

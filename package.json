@@ -1,0 +1,17 @@
+{
+  "name": "wp-settings-hub",
+  "private": true,
+  "description": "Tooling for the Settings Hub design-system end-to-end tests. The package itself is distributed through Composer.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:server": "wp-playground-cli server --blueprint=tests/e2e/blueprint.json --mount=.:/wordpress/wp-content/plugins/wp-settings-hub --mount=tests/e2e/fixtures/settings-hub-e2e:/wordpress/wp-content/plugins/settings-hub-e2e --port=9400 --login"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "@playwright/test": "1.59.1",
+    "@wp-playground/cli": "3.1.58"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

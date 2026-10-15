@@ -33,6 +33,7 @@ The tests extend `WP_UnitTestCase`, so they need the WordPress Test Suite and a 
 
 - Add or change tests in `tests/Unit` or `tests/Integration`, and run `composer qa` before finishing.
 - Update the PHPDoc and the README when the public API changes.
+- UI follows `docs/design-system.md`: use the semantic `--silver-hub-*` tokens, keep the CSS class names tests assert on, and change the document and `assets/css/settings-hub.css` together. `npm run test:e2e` (Playwright) checks that they agree.
 - Version history lives in `CHANGELOG.md` only. The release checklist lives in CONTRIBUTING.
 - Commit messages carry no attribution trailers; the `.githooks/commit-msg` hook strips them (see CONTRIBUTING).
 
@@ -40,4 +41,5 @@ The tests extend `WP_UnitTestCase`, so they need the WordPress Test Suite and a 
 
 - [README](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md): install, menu structure, API reference
 - [CONTRIBUTING](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md): local setup, tests, quality checks, commit convention, release checklist
+- [Design system](https://github.com/SilverAssist/wp-settings-hub/blob/main/docs/design-system.md): tokens, components and accessibility rules for the hub UI
 - [IMPLEMENTATION](https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md): integration guide for plugin authors

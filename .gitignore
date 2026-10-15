@@ -29,3 +29,9 @@ Thumbs.db
 
 # Caches
 *.cache
+
+# E2E tooling
+node_modules/
+test-results/
+playwright-report/
+tests/e2e/.auth/
