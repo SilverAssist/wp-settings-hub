@@ -29,4 +29,4 @@ parameters:
         - '#Undefined type \\WP_UnitTestCase\.#'
         - '#Use of unknown class: \\WP_UnitTestCase\.#'
         - '#Class .* extends unknown class WP_UnitTestCase\.#'
-        - '#Call to an undefined (static )?method .*::(setUp|tearDown|assert.*|factory)\(\)\.#'
+        - '#Call to an undefined (static )?method .*::(setUp|tearDown|assert.*|factory|setExpectedIncorrectUsage)\(\)\.#'
