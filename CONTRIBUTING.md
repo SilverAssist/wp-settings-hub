@@ -394,6 +394,8 @@ playwright.config.ts         # Playwright configuration
 scripts/
   install-wp-tests.sh        # Installs the WordPress Test Suite (wrapper over wp-coding-standards)
   run-quality-checks.sh      # Runs PHPCS, PHPStan and PHPUnit
+  update-version.sh          # Prepares a release: CHANGELOG heading and links, PACKAGE_VERSION
+  check-versions.sh          # Verifies every version source agrees (also run by release.yml)
 .githooks/commit-msg         # Strips AI attribution trailers from commit messages
 .github/workflows/           # ci.yml, quality-checks.yml, e2e.yml, release.yml, auto-merge-dependabot.yml
 README.md                    # Usage and API reference
@@ -433,8 +435,16 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 Releases are handled by maintainers. This checklist is the canonical copy.
 
-1. **Bump `PACKAGE_VERSION`** in `src/SettingsHub.php` to the new version. The hub uses it as the stylesheet cache-busting version, so browsers only fetch a changed `settings-hub.css` when it changes.
-2. **Update `CHANGELOG.md`**: add a `## [X.Y.Z] - YYYY-MM-DD` section for the release, add its compare link at the bottom (`[X.Y.Z]: https://github.com/SilverAssist/wp-settings-hub/compare/vPREVIOUS...vX.Y.Z`), and point the `[Unreleased]` link at `vX.Y.Z...HEAD`.
+1. **Prepare the release** with the version script, in a release branch:
+
+   ```bash
+   bash scripts/update-version.sh X.Y.Z --dry-run   # shows what it will change
+   bash scripts/update-version.sh X.Y.Z             # applies it
+   bash scripts/check-versions.sh --expect X.Y.Z    # verifies it (update-version.sh also runs this)
+   ```
+
+   `update-version.sh` moves the `[Unreleased]` notes under `## [X.Y.Z] - YYYY-MM-DD`, adds the `[X.Y.Z]` compare link, points the `[Unreleased]` link at `vX.Y.Z...HEAD` and sets `PACKAGE_VERSION` in `src/SettingsHub.php`. The hub uses `PACKAGE_VERSION` as the stylesheet cache-busting version, so browsers only fetch a changed `settings-hub.css` when it changes. It refuses an empty `[Unreleased]`, a version that is not newer than the last release, and an existing tag. It does not commit, tag or push.
+2. **Review and commit** the result, and open the PR. Before tagging a release that changes the public API, run the suite of a consumer plugin (for example `silver-assist-security`) against the release commit.
 3. **Merge to `main`**, then create the tag `vX.Y.Z`:
 
    ```bash
@@ -443,7 +453,7 @@ Releases are handled by maintainers. This checklist is the canonical copy.
    ```
 
 4. **Pushing the tag** triggers `.github/workflows/release.yml` (it can also be started by hand with the `tag` input). The workflow:
-   - fails unless `CHANGELOG.md` contains `[X.Y.Z]` and `PACKAGE_VERSION` equals `X.Y.Z`
+   - runs `scripts/check-versions.sh --expect X.Y.Z`, which fails unless `CHANGELOG.md` has the `[X.Y.Z]` heading and compare link and `PACKAGE_VERSION` equals `X.Y.Z`
    - runs the quality checks on PHP 8.3
    - builds a ZIP with `src/`, `assets/`, `vendor/`, `composer.json`, `LICENSE.md`, `README.md` and `CHANGELOG.md`
    - publishes a GitHub release with the changelog section as the release notes

@@ -633,12 +633,13 @@
         },
         {
           "id": "changelog-1-3-0-and-links",
-          "status": "not-started"
+          "status": "not-started",
+          "notes": "Run scripts/update-version.sh 1.3.0 (it moves [Unreleased], adds the [1.3.0] link and sets PACKAGE_VERSION in one step). The missing [1.2.2] link and the [Unreleased] base were repaired in the release-tooling branch."
         },
         {
           "id": "package-version-1-3-0",
           "status": "not-started",
-          "notes": "Bump together with moving [Unreleased] to [1.3.0]; PACKAGE_VERSION is 1.2.2 until then."
+          "notes": "Done by scripts/update-version.sh together with the CHANGELOG move; scripts/check-versions.sh --expect 1.3.0 verifies it."
         },
         {
           "id": "consumer-silver-assist-security-suite",
@@ -671,7 +672,12 @@
           "status": "not-started"
         }
       ],
-      "log": []
+      "log": [
+        {
+          "date": "2026-10-15",
+          "summary": "Release preparation tooling added ahead of the release (not released): scripts/update-version.sh X.Y.Z [--date] [--dry-run] and scripts/check-versions.sh [--expect X.Y.Z]. release.yml now calls check-versions.sh instead of its inline checks, and CONTRIBUTING.md documents the flow. Tested on a copy of the phase 4 branch: dry run, a real 1.2.2 -> 1.3.0 move (heading, both links, PACKAGE_VERSION, check passes), refusal of an equal, older or malformed version, refusal of an empty [Unreleased] on a second run. shellcheck is clean."
+        }
+      ]
     }
   ],
   "changelog": [
