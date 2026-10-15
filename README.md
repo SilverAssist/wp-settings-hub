@@ -342,6 +342,7 @@ Rules:
 - The value is a capability name made of letters, digits, underscores and hyphens. Anything else (empty, not a string, containing spaces) is reported with `_doing_it_wrong()` and the plugin falls back to `manage_options`, so a typo never opens a page wider than the default.
 - Capabilities are not ordered. A user who holds a custom capability but not `manage_options` sees only the plugins that ask for it, and an administrator who lacks a custom capability does not see that plugin.
 - Meta capabilities that need an object ID, such as `edit_post`, are not supported.
+- The hub's check and the check inside your settings callback are separate. If you lower the capability here, make the callback check the same one (the examples in this repository check `manage_options`), or the page opens and then refuses the user.
 - If the plugin saves its settings through the Settings API, WordPress checks `manage_options` again on `options.php`. Lower it for your option group with the `option_page_capability_{$option_group}` filter, otherwise the page loads but saving ends in a 403.
 
 Two filters change the capabilities. They run when the hub builds the menu on `admin_menu` and again when it renders, so add them before `admin_menu`:
