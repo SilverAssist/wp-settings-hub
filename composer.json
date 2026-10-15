@@ -1,6 +1,6 @@
 {
   "name": "silverassist/wp-settings-hub",
-  "description": "Centralized settings hub for Silver Assist WordPress plugins. Provides a unified Settings > Silver Assist menu with auto-registration and dynamic dashboard.",
+  "description": "Centralized settings hub for Silver Assist WordPress plugins, with a top-level Silver Assist admin menu, plugin auto-registration and a dynamic dashboard.",
   "type": "library",
   "license": "PolyForm-Noncommercial-1.0.0",
   "authors": [
