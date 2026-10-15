@@ -16,14 +16,16 @@ Centralized settings hub for Silver Assist WordPress plugins. Provides a unified
 - **🎨 Beautiful UI**: WordPress-native design with cards and tabs
 - **🏢 Top-Level Menu**: Professional menu structure with custom icon and submenus
 - **🔒 Type-Safe**: Full PHP 8.2+ type hints and PHPDocs
-- **✅ Well-Tested**: Comprehensive test suite with PHPUnit 10
-- **📦 Composer-Ready**: Easy integration via `composer require`
+- **✅ Tested**: PHPUnit 9.6 tests that run against the WordPress Test Suite
+- **📦 Composer-Ready**: Installed through Composer (see [Installation](#installation))
 
 ## Requirements
 
 - **PHP**: 8.2 or higher
 - **WordPress**: 6.5 or higher
 - **Composer**: For package management
+
+The hub registers its menu on `admin_menu` only. It supports single-site installs and the per-site admin of a multisite network, and registers nothing in the network admin or user admin.
 
 ## Installation
 
@@ -85,13 +87,13 @@ This repository's own `composer.json` declares `vcs` repositories for its Silver
 
 The hub creates a **top-level menu** in the WordPress admin:
 
-```
+```text
 WordPress Admin
 ├── Dashboard
 ├── Posts
 ├── Media
 ├── ...
-├── Silver Assist 🛡️           ← Top-level menu
+├── Silver Assist              ← Top-level menu (inline SVG icon)
 │   ├── Dashboard              ← Hub overview
 │   ├── Post Revalidate        ← Your plugin
 │   └── [More plugins...]      ← More plugins
@@ -120,13 +122,13 @@ $hub->register_plugin(
     [
         'description' => 'Description of my plugin',
         'version'     => '1.0.0',
-        'tab_title'   => 'My Plugin',  // Optional: custom tab title
+        'tab_title'   => 'My Plugin',  // Optional: label for the sidebar item and the tab
         'plugin_file' => __FILE__,     // Optional but recommended: path to main plugin file
     ]
 );
 ```
 
-**Note:** The `plugin_file` parameter is optional but recommended when multiple plugins use this package. It ensures CSS assets load correctly by resolving the vendor directory URL from your plugin's location.
+**Note:** The `plugin_file` parameter is optional but recommended. It lets the hub find its stylesheet under your plugin's `vendor/` directory. See [Asset URL resolution](#asset-url-resolution) for the exact rules.
 
 ### 2. Render Your Settings Page
 
@@ -135,17 +137,15 @@ Your callback function receives no parameters and should render the settings con
 ```php
 public function render_settings(): void {
     ?>
-    <div class="silverassist-plugin-settings">
-        <p>Your plugin settings go here.</p>
-        
-        <form method="post" action="options.php">
-            <?php
-            settings_fields( 'my_plugin_settings' );
-            do_settings_sections( 'my_plugin_settings' );
-            submit_button();
-            ?>
-        </form>
-    </div>
+    <p>Your plugin settings go here.</p>
+
+    <form method="post" action="options.php">
+        <?php
+        settings_fields( 'my_plugin_settings' );
+        do_settings_sections( 'my_plugin_settings' );
+        submit_button();
+        ?>
+    </form>
     <?php
 }
 ```
@@ -154,21 +154,21 @@ public function render_settings(): void {
 
 Your plugin will now appear:
 
-- A card on the dashboard showing name, description, and version
-- A submenu item under "Silver Assist"
-- Optional: in the tabs navigation if tabs are enabled
+- A card on the dashboard showing the name, description, and version
+- A submenu item under "Silver Assist", labelled with `tab_title` (or the name when `tab_title` is not set)
+- A tab in the tabs navigation. Tabs are enabled by default, see [Disable Tabs Navigation](#disable-tabs-navigation)
 
 ---
 
 ## Complete Example
 
-See [`integration-guide.php`](integration-guide.php) for a complete working example.
+See [`integration-guide.php`](https://github.com/SilverAssist/wp-settings-hub/blob/main/integration-guide.php) for a complete working example.
 
 ## Advanced Usage
 
 ### Disable Tabs Navigation
 
-If you prefer not to show tabs for cross-plugin navigation:
+Tabs are enabled by default. If you prefer not to show tabs for cross-plugin navigation:
 
 ```php
 $hub = SettingsHub::get_instance();
@@ -192,7 +192,8 @@ $hub = SettingsHub::get_instance();
 $plugins = $hub->get_plugins();
 
 foreach ( $plugins as $slug => $plugin ) {
-    echo $plugin['name'] . ' - ' . $plugin['version'];
+    // 'version' is optional, so it may not be set.
+    echo $plugin['name'] . ' - ' . ( $plugin['version'] ?? '' );
 }
 ```
 
@@ -241,7 +242,7 @@ $hub->register_plugin(
 
 If you're using the `silverassist/wp-github-updater` package, you can add a "Check Updates" button:
 
-> ⚠️ **Important**: When implementing update checks, you must properly synchronize both WordPress caches (plugin-specific and system-wide) to ensure the Updates page displays current information. See [IMPLEMENTATION.md](IMPLEMENTATION.md#integration-with-wp-github-updater) for the complete implementation with cache synchronization.
+> ⚠️ **Important**: When implementing update checks, you must properly synchronize both WordPress caches (plugin-specific and system-wide) to ensure the Updates page displays current information. See [IMPLEMENTATION.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md#example-2-plugin-with-update-button) for the complete implementation with cache synchronization.
 
 ```php
 use SilverAssist\WpGithubUpdater\Updater;
@@ -296,7 +297,7 @@ class My_Plugin {
     
     // IMPORTANT: This is a simplified example. The complete implementation
     // requires proper cache clearing with delete_site_transient() and wp_update_plugins().
-    // See IMPLEMENTATION.md for the full code.
+    // See https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md for the full code.
     public function render_update_check( string $slug ): void {
         ?>
         jQuery.post(ajaxurl, {
@@ -387,7 +388,7 @@ add_action( 'silverassist_settings_hub_plugin_actions', function( $slug, $plugin
 
 ## Integration Examples
 
-See [`integration-guide.php`](integration-guide.php) for complete working examples including:
+See [`integration-guide.php`](https://github.com/SilverAssist/wp-settings-hub/blob/main/integration-guide.php) for complete working examples including:
 
 - Basic plugin integration
 - wp-github-updater integration with "Check Updates" button
@@ -411,13 +412,13 @@ Register a plugin with the settings hub.
 **Parameters**:
 
 - `$slug` (string): Unique plugin slug (e.g., `'post-revalidate'`)
-- `$name` (string): Display name for the plugin
+- `$name` (string): Display name for the plugin. It is the page title, the heading (`<h1>`) of the plugin's settings page and the heading of its dashboard card
 - `$callback` (callable): Function to render the plugin's settings page
 - `$args` (array, optional): Additional arguments:
   - `description` (string): Short description shown on dashboard card
-  - `version` (string): Plugin version number
-  - `tab_title` (string): Custom title for tab (defaults to `$name`)
-  - `plugin_file` (string): Absolute path to the plugin's main file (recommended for multi-plugin setups)
+  - `version` (string): Plugin version number, shown on the dashboard card and in a badge next to the heading of the plugin's settings page
+  - `tab_title` (string): Label for both the sidebar submenu item and the tab (defaults to `$name`)
+  - `plugin_file` (string): Absolute path to the plugin's main file, used to find the hub stylesheet (see [Asset URL resolution](#asset-url-resolution))
   - `capability` (string): Capability a user needs to see and open the plugin's page, `manage_options` by default (see [Restrict a Plugin to a Capability](#restrict-a-plugin-to-a-capability))
   - `actions` (array): Custom action buttons for the dashboard card
 
@@ -457,6 +458,21 @@ $hub->register_plugin(
 
 **Returns**: `void`
 
+**Behaviour notes**:
+
+- Registering a slug that is already registered replaces its data silently. Nothing is merged with the earlier registration and no notice is raised.
+- `plugin_file` is not stored with the plugin data, so it does not appear in `get_plugins()`.
+
+#### Asset URL resolution
+
+The hub loads its stylesheet (`assets/css/settings-hub.css`) from the package directory. It finds the URL in this order:
+
+1. **From `plugin_file`.** Only the first non-empty `plugin_file` passed to `register_plugin()` is kept, and later ones are ignored. If `vendor/silverassist/wp-settings-hub/assets/css/settings-hub.css` exists inside the directory of that file, the URL is built from the plugin's URL (`plugin_dir_url()`).
+2. **From the package's own location.** Otherwise the hub looks at the directory it was loaded from. That path becomes a URL only when the package lives under `ABSPATH`, because the hub swaps `ABSPATH` for the site URL.
+3. **No stylesheet.** If neither works (for example a package installed outside `ABSPATH`), no stylesheet is loaded and nothing is reported, so the pages render without the hub styles.
+
+Pass `plugin_file => __FILE__` from your main plugin file, and keep the package in your plugin's `vendor/` directory, to avoid step 3.
+
 ### `enable_tabs( bool $enable )`
 
 Enable or disable tabs navigation.
@@ -495,119 +511,7 @@ Get the parent menu slug.
 
 ## Development
 
-### Install Dependencies
-
-```bash
-composer install
-```
-
-### WordPress Test Suite (Required)
-
-This package requires WordPress Test Suite for testing:
-
-```bash
-# Install WordPress Test Suite
-bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
-
-# Set environment variable (add to your ~/.zshrc or ~/.bashrc for persistence)
-export WP_TESTS_DIR=/tmp/wordpress-tests-lib
-```
-
-**Important**: Tests require the WordPress Test Suite to be installed. The installation script downloads and configures WordPress core test suite in `/tmp/wordpress-tests-lib`.
-
-On macOS, you may need to set the `WP_TESTS_DIR` environment variable because `sys_get_temp_dir()` returns a user-specific path.
-
-### Run All Quality Checks
-
-```bash
-./scripts/run-quality-checks.sh all
-```
-
-This runs:
-- **PHPCBF**: Auto-fix code standards
-- **PHPCS**: Check code standards (WordPress-Extra)
-- **PHPStan**: Static analysis (Level 8)
-- **PHPUnit**: Test suite with WP_UnitTestCase
-
-### Running Tests
-
-```bash
-# Run all tests (unit + integration)
-composer test
-
-# Run only unit tests
-vendor/bin/phpunit --testsuite unit
-
-# Run only integration tests
-vendor/bin/phpunit --testsuite integration
-
-# Run with coverage
-composer test:coverage
-```
-
-**Test Suites:**
-- **Unit Tests**: Test individual methods and logic in isolation (10 tests)
-- **Integration Tests**: Test complete WordPress integration including admin menus, rendering, and multi-plugin scenarios (8 tests)
-
-### Individual Checks
-
-```bash
-# Auto-fix code standards
-composer phpcbf
-```
-```
-
-### WordPress Test Suite (Required)
-
-This package requires WordPress Test Suite for testing:
-
-```bash
-# Install WordPress Test Suite
-bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
-```
-
-**Important**: Tests require the WordPress Test Suite to be installed. The installation script above will download and configure WordPress core test suite in `/tmp/wordpress-tests-lib`.
-
-### Run All Quality Checks
-
-```bash
-./scripts/run-quality-checks.sh all
-```
-
-This runs:
-- **PHPCBF**: Auto-fix code standards
-- **PHPCS**: Check code standards (WordPress-Extra)
-- **PHPStan**: Static analysis (Level 8)
-- **PHPUnit**: Test suite (with WP_UnitTestCase if available)
-
-### Individual Checks
-
-```bash
-# Auto-fix code standards
-composer phpcbf
-
-# Check code standards
-composer phpcs
-
-# Run static analysis
-composer phpstan
-
-# Run tests
-composer phpunit
-
-# Run all (without auto-fix)
-composer qa
-```
-
-### Quality Standards
-
-- ✅ **PHP 8.2+** with strict types
-- ✅ **WordPress Coding Standards** (WPCS)
-- ✅ **PHPStan Level 8** - no type errors
-- ✅ **100% test coverage** for new features
-- ✅ **Full PHPDoc** for all classes and methods
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+Setup, running the tests, the quality checks, the commit convention and the release checklist are documented in [CONTRIBUTING.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md).
 
 ## Architecture
 
@@ -640,7 +544,7 @@ For issues, feature requests, or questions:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+See [CONTRIBUTING.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## Changelog
 

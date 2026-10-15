@@ -1,14 +1,19 @@
-# Contributing to SilverAssist Settings Hub
+# Contributing to Silver Assist Settings Hub
 
-Thank you for your interest in contributing to the SilverAssist Settings Hub package! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to the Silver Assist Settings Hub package! This document provides guidelines and instructions for contributing.
 
 ## Development Setup
 
 ### Prerequisites
 
-- PHP 8.2 or higher
-- Composer
+- PHP 8.2 or higher, with the extensions CI installs: `mbstring`, `intl`, `mysqli` and `pdo_mysql`
+- Composer 2
 - Git
+- A GitHub token that can read the Silver Assist development dependencies (see below)
+- `svn` (Subversion), used by the test-suite installer to download the WordPress test library
+- A running MySQL server, plus the `mysql` and `mysqladmin` client tools
+
+The `silverassist/coding-standards` and `silverassist/wp-coding-standards` development dependencies are declared as Composer `vcs` repositories in `composer.json`, and Composer reads them from GitHub. Configure a token before the first `composer install`, as described in the [README installation steps](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md#installing-via-composer-private-repository) (for example `composer config --global github-oauth.github.com <token>`). CI passes the same token to `composer install` through the `COMPOSER_AUTH` secret. Never commit a token or an `auth.json`.
 
 ### Local Setup
 
@@ -25,33 +30,30 @@ Thank you for your interest in contributing to the SilverAssist Settings Hub pac
    composer install
    ```
 
-3. **Install WordPress Test Suite** (optional, recommended):
+   This also enables the repository's git hooks (see [Git Hooks](#git-hooks)).
+
+3. **Install the WordPress Test Suite** (required, see [Testing](#testing)):
 
    ```bash
-   bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
+   bash scripts/install-wp-tests.sh wp_settings_hub_test root '' 127.0.0.1 latest
    ```
-
-   This enables tests to use real WordPress functions via `WP_UnitTestCase`. If not installed, tests automatically fall back to Brain Monkey mocks.
 
 4. **Verify setup**:
 
    ```bash
-   ./scripts/run-quality-checks.sh all
+   vendor/bin/phpunit
+   composer qa
    ```
 
 ### Before Committing
 
-Always run quality checks before committing:
+Always run the quality checks before committing:
 
 ```bash
-./scripts/run-quality-checks.sh all
+composer qa
 ```
 
-This will:
-1. Auto-fix code standards (PHPCBF)
-2. Check code standards (PHPCS)
-3. Run static analysis (PHPStan Level 8)
-4. Run test suite (PHPUnit)
+`composer qa` runs PHPCS, PHPStan (level 8) and the test suite without coverage. `./scripts/run-quality-checks.sh all` runs the same three checks (PHPCS, PHPStan, PHPUnit) and does not auto-fix anything. CI does not auto-fix either, so run `composer phpcbf` yourself first when PHPCS reports fixable errors.
 
 ### Individual Checks
 
@@ -67,12 +69,21 @@ composer phpcs
 # Run static analysis
 composer phpstan
 
-# Run tests
+# Run tests without coverage
+composer test
+
+# Run tests and write the coverage reports
 composer phpunit
 
-# Run all checks
+# Run PHPCS, PHPStan and the tests (no coverage)
 composer qa
 ```
+
+The same checks are available one at a time through `./scripts/run-quality-checks.sh [phpcbf|phpcs|phpstan|phpunit|all]`.
+
+### Git Hooks
+
+`composer install` and `composer update` run the `setup-hooks` script, which sets `core.hooksPath` to `.githooks` in your clone. The `.githooks/commit-msg` hook removes AI attribution trailers from commit messages (for example `Co-Authored-By` lines that name an AI assistant, and "Generated with" footers). It rewrites the message and tells you what it removed, it does not block the commit. Ordinary mentions of a tool name in a commit subject are left alone.
 
 ## Coding Standards
 
@@ -81,8 +92,13 @@ composer qa
 - **PHP Version**: 8.2+
 - **Strict Types**: All files must use `declare(strict_types=1);`
 - **Type Hints**: Full type hints for all parameters, return types, and properties
-- **WordPress Coding Standards**: Follow WPCS with PSR-4 exceptions
-- **PHPStan**: Level 8 compliance required
+- **Indentation**: Tabs, as in the WordPress coding standards
+- **PHPCS**: The `SilverAssistWP` ruleset (see below)
+- **PHPStan**: Level 8 compliance required (`src` and `tests` are analysed)
+
+### PHPCS Ruleset
+
+`phpcs.xml` uses the shared `SilverAssistWP` ruleset from the `silverassist/wp-coding-standards` package. That ruleset builds on `WordPress-Extra` and `WordPress-Docs`, and allows PascalCase file names that match the class (PSR-4), K&R braces and short array syntax. `phpcs.xml` adds the `PrefixAllGlobals` rule: globals must start with `silverassist_settings_hub` or live in the `SilverAssist\SettingsHub` namespace. It also sets the minimum supported WordPress version to 6.5 and the PHP compatibility check to 8.2 and up. The `tests/` directory and `integration-guide.php` are excluded from PHPCS.
 
 ### Naming Conventions
 
@@ -121,33 +137,34 @@ class ClassName {
 
 ### Test Environment Requirements
 
-This package requires **WordPress Test Suite** for testing. All tests extend `WP_UnitTestCase` which provides:
-- Real WordPress functions (not mocks)
-- WordPress database operations
-- Factory methods for creating test data
-- WordPress-specific assertions
+The **WordPress Test Suite and a running MySQL server are required**. `tests/bootstrap.php` prints "WordPress Test Suite not found!" and exits with status 1 when the suite is missing, and there is no mock-only mode. Every test extends `SilverAssist\SettingsHub\Tests\TestCase`, which extends `WP_UnitTestCase`, so the `unit` suite boots WordPress and connects to MySQL exactly like the `integration` suite does. The tests therefore use real WordPress functions, the database and the factory methods.
 
-### Installing WordPress Test Suite
+`tests/TestCase.php` also gives every test a clean admin menu state, a fresh style queue and a fresh `SettingsHub` singleton, and offers helpers such as `hub()`, `login_as()`, `fire_admin_menu()` and `render()`.
 
-**Required before running tests**:
+### Installing the WordPress Test Suite
+
+Run `composer install` first. `scripts/install-wp-tests.sh` is a thin wrapper over the shared installer in `vendor/silverassist/wp-coding-standards`, and it stops with an error if that package is missing.
 
 ```bash
-bash scripts/install-wp-tests.sh wordpress_test root 'root' localhost latest true
+bash scripts/install-wp-tests.sh wp_settings_hub_test root '' 127.0.0.1 latest
+vendor/bin/phpunit
 ```
 
-This script:
-- Downloads WordPress core and test suite to `/tmp/wordpress-tests-lib`
-- Creates a test database (default: `wordpress_test`)
-- Configures the test environment
+The arguments are:
 
-**Database credentials**: Adjust the script parameters for your MySQL/MariaDB setup:
 ```bash
-bash scripts/install-wp-tests.sh <db-name> <db-user> <db-pass> <db-host> <wp-version> <skip-db-create>
+bash scripts/install-wp-tests.sh <db-name> <db-user> <db-pass> [db-host] [wp-version] [skip-database-creation]
 ```
+
+- The example uses the database `wp_settings_hub_test`, user `root` with an empty password, host `127.0.0.1` and the latest WordPress. Adjust the user and password to your MySQL setup.
+- The script downloads WordPress core and the WordPress test library into `wordpress/` and `wordpress-tests-lib/` under `$TMPDIR` (`/tmp` when `TMPDIR` is unset) and writes `wp-tests-config.php` with your database settings.
+- The script creates the database. If it already exists, an interactive run asks before dropping and recreating it, and a non-interactive run (CI) recreates it without asking. Use a database that holds nothing you need.
+- The sixth argument, `true`, skips database creation. It is only valid when the database already exists, as in CI, where the MySQL service container creates `wordpress_test` before the script runs. Leave it out locally.
+- `WP_TESTS_DIR` is the folder `tests/bootstrap.php` loads the test library from. When the variable is not set it defaults to `<system temp dir>/wordpress-tests-lib`. If the installer put the library somewhere else (for example because `TMPDIR` differs between your shell and PHP), `export WP_TESTS_DIR=/path/to/wordpress-tests-lib` before running PHPUnit. The installer honors the same variable, and also `WP_CORE_DIR` for the WordPress core directory.
 
 ### Writing Tests
 
-Tests are located in `tests/Unit/` and extend `SilverAssist\SettingsHub\Tests\TestCase`:
+Unit tests live in `tests/Unit/` and integration tests in `tests/Integration/`. Both extend `SilverAssist\SettingsHub\Tests\TestCase`:
 
 ```php
 <?php
@@ -156,47 +173,62 @@ declare(strict_types=1);
 namespace SilverAssist\SettingsHub\Tests\Unit;
 
 use SilverAssist\SettingsHub\Tests\TestCase;
-use SilverAssist\SettingsHub\YourClass;
 
 class YourClassTest extends TestCase {
 	public function test_something(): void {
-		// Use real WordPress functions
-		update_option( 'test_key', 'test_value' );
-		$value = get_option( 'test_key' );
-		
-		$instance = new YourClass();
-		$result = $instance->method();
-		
-		$this->assertTrue( $result );
+		// Use real WordPress functions.
+		$this->hub()->register_plugin( 'my-plugin', 'My Plugin', '__return_true' );
+
+		$this->assertTrue( $this->hub()->is_plugin_registered( 'my-plugin' ) );
 	}
 }
 ```
 
 **Key Points**:
 - Extend `SilverAssist\SettingsHub\Tests\TestCase` (which extends `WP_UnitTestCase`)
-- WordPress Test Suite must be installed before running tests
-- The base class automatically handles WordPress Test Suite or Brain Monkey setup
-- When WordPress Test Suite is available, you can use real WordPress functions
-- When only Brain Monkey is available, common functions are automatically mocked
+- The WordPress Test Suite and MySQL must be available before running any test
+- Put a test in `tests/Unit/` when it exercises the hub's methods directly, and in `tests/Integration/` when it goes through the admin menu, page rendering or the enqueue flow
+- Name test methods `test_<behaviour>` in `snake_case`
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (no coverage)
+composer test
+
+# Run all tests and write the coverage reports
 composer phpunit
 
-# Run specific test
-vendor/bin/phpunit tests/Unit/YourClassTest.php
+# Run one suite (unit, integration or all)
+vendor/bin/phpunit --testsuite integration
 
-# Run with coverage
+# Run a specific test file
+vendor/bin/phpunit tests/Unit/SettingsHubTest.php
+
+# Run the tests and write the HTML coverage report
 composer test:coverage
 ```
+
+`composer test` runs `phpunit --no-coverage`. `composer phpunit` runs plain `phpunit`, which writes the coverage reports configured in `phpunit.xml` (an HTML report in `coverage/`, `coverage.xml` and a text summary) and needs a coverage driver such as Xdebug or PCOV.
+
+To run the suite in WordPress multisite mode, set `WP_MULTISITE=1`, as the CI multisite job does.
 
 ### Test Coverage
 
 - All new features must include tests
-- Aim for 100% coverage of new code
+- Cover the new code, including its failure paths
 - Tests should be clear and maintainable
+
+## Continuous Integration
+
+`.github/workflows/ci.yml` runs on pushes to `main` and `develop`, on pull requests to `main`, and on manual dispatch. It calls the reusable `quality-checks.yml` workflow, which starts a MySQL 8.0 service, installs the WordPress Test Suite, then runs `php -l integration-guide.php`, `composer phpcs`, `composer phpstan`, the `unit` suite and the `integration` suite. The jobs are:
+
+- Quality checks on PHP 8.2 (this job also collects coverage and uploads it to Codecov without failing the build), PHP 8.3 and PHP 8.4, all against the latest WordPress
+- Quality checks on PHP 8.2 against WordPress 6.5, the oldest supported version
+- Quality checks on PHP 8.2 in WordPress multisite mode
+- A security audit job that runs `composer audit`
+
+`auto-merge-dependabot.yml` handles Dependabot updates. Releases are covered in [Release Process](#release-process).
 
 ## Pull Request Process
 
@@ -226,19 +258,23 @@ git checkout -b feature/your-feature-name
 
 ```bash
 # Run all quality checks
-./scripts/run-quality-checks.sh all
+composer qa
 
 # Ensure all checks pass before proceeding
 ```
 
 ### 4. Commit Guidelines
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+Recent history uses two styles, and nothing enforces either of them (the only commit hook removes AI attribution trailers, see [Git Hooks](#git-hooks)):
+
+- **Tracked work**: `TICKET: subject`, for example `WEB-1194: Read the vcs repositories with git instead of the GitHub API`
+- **Everything else**: a [Conventional Commits](https://www.conventionalcommits.org/) prefix, for example `chore(deps): bump actions/checkout`, `ci: Add auto-merge Dependabot PRs workflow` or `docs: update README installation steps`
+
+Merged commits carry the PR number, such as `(#45)`. Use the ticket style when your change has a ticket, and a Conventional Commits prefix when it does not:
 
 ```bash
 # Format: <type>(<scope>): <subject>
 
-# Examples:
 git commit -m "feat: add new plugin registration option"
 git commit -m "fix: resolve PHP 8.4 deprecation warning"
 git commit -m "docs: update README installation steps"
@@ -267,7 +303,7 @@ git push origin feature/your-feature-name
 ### 6. PR Requirements
 
 Your PR must:
-- ✅ Pass all CI/CD checks (PHPCS, PHPStan, PHPUnit)
+- ✅ Pass all CI/CD checks (PHPCS, PHPStan, PHPUnit, the Composer security audit)
 - ✅ Include tests for new features
 - ✅ Update documentation if needed
 - ✅ Have a clear description of changes
@@ -327,15 +363,25 @@ For new features:
 
 ## Development Guidelines
 
-### File Structure
+### Project Layout
 
-```
-src/               # Source code
-tests/            # Test files
-  Unit/           # Unit tests
-  Integration/    # Integration tests (if needed)
-scripts/          # Automation scripts
-.github/          # CI/CD workflows
+```text
+src/                         # Source code (SettingsHub.php)
+assets/css/                  # settings-hub.css, the stylesheet the hub loads
+tests/
+  bootstrap.php              # Boots the WordPress Test Suite (exits if it is missing)
+  TestCase.php               # Base class for every test (extends WP_UnitTestCase)
+  Unit/                      # "unit" suite
+  Integration/               # "integration" suite
+scripts/
+  install-wp-tests.sh        # Installs the WordPress Test Suite (wrapper over wp-coding-standards)
+  run-quality-checks.sh      # Runs PHPCS, PHPStan and PHPUnit
+.githooks/commit-msg         # Strips AI attribution trailers from commit messages
+.github/workflows/           # ci.yml, quality-checks.yml, release.yml, auto-merge-dependabot.yml
+README.md                    # Usage and API reference
+IMPLEMENTATION.md            # Integration guide for plugin authors
+integration-guide.php        # Example plugin integration (excluded from PHPCS)
+CHANGELOG.md                 # Version history
 ```
 
 ### Adding New Features
@@ -367,18 +413,30 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 ## Release Process
 
-Releases are handled by maintainers:
+Releases are handled by maintainers. This checklist is the canonical copy.
 
-1. Update version in relevant files
-2. Update CHANGELOG.md
-3. Create git tag: `v1.2.0`
-4. Push tag to trigger release workflow
-5. GitHub Actions creates release automatically
+1. **Bump `PACKAGE_VERSION`** in `src/SettingsHub.php` to the new version. The hub uses it as the stylesheet cache-busting version, so browsers only fetch a changed `settings-hub.css` when it changes.
+2. **Update `CHANGELOG.md`**: add a `## [X.Y.Z] - YYYY-MM-DD` section for the release, add its compare link at the bottom (`[X.Y.Z]: https://github.com/SilverAssist/wp-settings-hub/compare/vPREVIOUS...vX.Y.Z`), and point the `[Unreleased]` link at `vX.Y.Z...HEAD`.
+3. **Merge to `main`**, then create the tag `vX.Y.Z`:
+
+   ```bash
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+4. **Pushing the tag** triggers `.github/workflows/release.yml` (it can also be started by hand with the `tag` input). The workflow:
+   - fails unless `CHANGELOG.md` contains `[X.Y.Z]` and `PACKAGE_VERSION` equals `X.Y.Z`
+   - runs the quality checks on PHP 8.3
+   - builds a ZIP with `src/`, `assets/`, `vendor/`, `composer.json`, `LICENSE.md`, `README.md` and `CHANGELOG.md`
+   - publishes a GitHub release with the changelog section as the release notes
+
+The ZIP does not include `IMPLEMENTATION.md`, `CONTRIBUTING.md` or `integration-guide.php`, so the README links to them with absolute GitHub URLs.
 
 ## Getting Help
 
 - **Bugs**: Open an [Issue](https://github.com/SilverAssist/wp-settings-hub/issues)
 - **Security**: Email security@silverassist.com
+- **Support and questions**: Email support@silverassist.com (the address listed in the README and in `composer.json`)
 
 ## License
 
@@ -413,4 +471,4 @@ Contributors are recognized in:
 
 ---
 
-Thank you for contributing to SilverAssist Settings Hub! 🎉
+Thank you for contributing to Silver Assist Settings Hub! 🎉
