@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A plugin page stops with a 403 when it is rendered for a user who lacks the plugin's capability.
 - The `composer.json` description and the class docblock now say the hub adds a top-level Silver Assist menu, not "Settings > Silver Assist".
 - Removed the unused `slevomat/coding-standard` dev dependency from `composer.json`. No ruleset loads a Slevomat sniff; the package is still installed as a dependency of `silverassist/wp-coding-standards`.
+- The `register_plugin()` `$args` docblock type is now `array<string, mixed>`, and the plugin array shape is a `PluginData` type alias shared by the docblocks of `get_plugins()` and the private renderers. No behaviour changes.
+- Static analysis runs on PHPStan 2.x with `reportUnmatchedIgnoredErrors` on and no broad `ignoreErrors` patterns: the WordPress test library and the `ABSPATH` and `WP_PLUGIN_DIR` constants are stubbed in `tests/phpstan/`. `codecov.yml` sets a project coverage target of 96.31% and ignores `tests/` and `vendor/`.
 
 ### Fixed
 
