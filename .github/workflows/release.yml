@@ -27,20 +27,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          TAG_VERSION="${RELEASE_TAG#v}"
-          
-          # Check CHANGELOG.md contains this version
-          if ! grep -q "\[${TAG_VERSION}\]" CHANGELOG.md; then
-            echo "❌ Version $TAG_VERSION not found in CHANGELOG.md"
-            exit 1
-          fi
-          
-          # Check the stylesheet cache-busting constant matches the release
-          CONST_VERSION=$(sed -n "s/.*PACKAGE_VERSION = '\([^']*\)'.*/\1/p" src/SettingsHub.php)
-          if [ "$CONST_VERSION" != "$TAG_VERSION" ]; then
-            echo "❌ PACKAGE_VERSION in src/SettingsHub.php is '$CONST_VERSION' but the release is $TAG_VERSION"
-            exit 1
-          fi
+          # CHANGELOG heading and compare links, PACKAGE_VERSION and composer.json must all agree with the tag.
+          bash scripts/check-versions.sh --expect "${RELEASE_TAG#v}"
 
           echo "✅ Version validation passed"
 
