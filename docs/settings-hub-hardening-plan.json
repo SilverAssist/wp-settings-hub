@@ -566,7 +566,7 @@
       "id": "phase-6-phpstan",
       "title": "Phase 6: PHPStan tightening",
       "kind": "phase",
-      "status": "not-started",
+      "status": "in-progress",
       "notes": "Branch: 48-phase-6-phpstan. Keep src/ fully clean; a tests/-only baseline is acceptable for the 2.x upgrade if logged as a follow-up.",
       "findings": [
         "With reportUnmatchedIgnoredErrors: true, three ignore patterns are stale (Undefined type \\WP_UnitTestCase, Use of unknown class \\WP_UnitTestCase, Class .* extends unknown class WP_UnitTestCase).",
@@ -577,39 +577,44 @@
       "tasks": [
         {
           "id": "branch",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "report-unmatched-and-drop-stale-patterns",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "plugin-data-type-alias-and-src-clean",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "upgrade-phpstan-2",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "ci-coverage-gate",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Record the Codecov percentage after Phase 4 has merged, then add a codecov.yml project status check at that value minus 2 points."
         },
         {
           "id": "verify",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "review",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "pr",
-          "status": "not-started"
+          "status": "completed"
         }
       ],
-      "log": []
+      "log": [
+        {
+          "date": "2026-10-15",
+          "summary": "Executed by a Sonnet agent in an isolated worktree, reviewed by two independent lenses (ignore audit and source safety, toolchain and gate) for two rounds; the fixer restored a (string) cast in get_plugin_capability that the first pass dropped. PHPStan 2.3.1 at level 8 with reportUnmatchedIgnoredErrors on; the WordPress test library and constants are stubbed in tests/phpstan/wp-test-suite-stubs.php; one path-scoped ignore remains (the e2e fixture). The 7 assertNotFalse assertions that PHPStan proved always true were removed (374 assertions, same 110 tests). The agent put 98.31% in codecov.yml but no log or API shows it; the orchestrator replaced it with the verifiable PHPUnit line coverage of the CI run on main after Phase 4 (98.26%, 282/287) and set the project target to 96.26% (minus 2 points), validated with the Codecov validator. Stacked on 48-phase-5-docs: the composer.lock conflict was resolved by keeping the PHPStan lock and refreshing the content hash with composer update --lock (slevomat stays as a transitive dependency)."
+        }
+      ]
     },
     {
       "id": "phase-7-release",
