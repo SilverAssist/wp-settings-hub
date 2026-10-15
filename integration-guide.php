@@ -453,25 +453,23 @@ class My_Plugin_With_Updates {
 		);
 	}
 
-	/**
-	 * AJAX handler for manual update checks.
-	 * 
-	 * CRITICAL: This method implements proper cache synchronization to ensure
-	 * the WordPress Updates page displays current information.
-	 * 
-	 * Cache Clearing Flow:
-	 * 1. Clear plugin version cache (GitHub API data)
-	 * 2. Clear WordPress update cache (update-core.php data) ← CRITICAL!
-	 * 3. Force WordPress to check for updates NOW (triggers API call)
-	 * 4. Check if update is available
-	 * 5. Return result
-	 * 
-	 * Without steps 2 and 3, update-core.php will show stale data even though
-	 * the admin notice shows an update is available.
-	 *
-	 * @since 1.0.0
-	 * @return void
-	 */
+	// AJAX handler for manual update checks.
+	//
+	// CRITICAL: This method implements proper cache synchronization to ensure
+	// the WordPress Updates page displays current information.
+	//
+	// Cache Clearing Flow:
+	// 1. Clear plugin version cache (GitHub API data)
+	// 2. Clear WordPress update cache (update-core.php data) ← CRITICAL!
+	// 3. Force WordPress to check for updates NOW (triggers API call)
+	// 4. Check if update is available
+	// 5. Return result
+	//
+	// Without steps 2 and 3, update-core.php will show stale data even though
+	// the admin notice shows an update is available.
+	//
+	// @since 1.0.0
+	// @return void
 	public function ajax_check_updates(): void {
 		// 1. Validate nonce
 		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';

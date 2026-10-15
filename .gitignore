@@ -5,6 +5,7 @@
 # Build artifacts
 /.phpunit.cache/
 /coverage/
+/coverage.xml
 
 # IDE
 /.idea/

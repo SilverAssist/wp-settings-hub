@@ -69,7 +69,7 @@ run_phpcs() {
 	
 	cd "$PROJECT_ROOT"
 	
-	if vendor/bin/phpcs --warning-severity=0; then
+	if vendor/bin/phpcs; then
 		print_success "PHPCS passed - No errors found"
 		return 0
 	else
@@ -146,8 +146,7 @@ main() {
 				run_phpunit || failed=1
 				;;
 			all)
-				# Run all checks in order.
-				run_phpcbf || failed=1
+				# Run all checks in order, matching CI (no auto-fix: run 'phpcbf' explicitly).
 				run_phpcs || failed=1
 				run_phpstan || failed=1
 				run_phpunit || failed=1

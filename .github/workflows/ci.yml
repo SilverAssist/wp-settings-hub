@@ -37,13 +37,33 @@ jobs:
       php-version: '8.4'
       upload-coverage: false
 
+  # Oldest supported WordPress version
+  quality-checks-wp65:
+    name: Quality Checks (WP 6.5)
+    uses: ./.github/workflows/quality-checks.yml
+    secrets: inherit
+    with:
+      php-version: '8.2'
+      wordpress-version: '6.5'
+      upload-coverage: false
+
+  # WordPress multisite
+  quality-checks-multisite:
+    name: Quality Checks (Multisite)
+    uses: ./.github/workflows/quality-checks.yml
+    secrets: inherit
+    with:
+      php-version: '8.2'
+      multisite: true
+      upload-coverage: false
+
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         
       - name: 🐘 Setup PHP 8.2
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
