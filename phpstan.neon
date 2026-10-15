@@ -12,7 +12,7 @@ parameters:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
         - vendor/php-stubs/wordpress-stubs
-    reportUnmatchedIgnoredErrors: false
+    reportUnmatchedIgnoredErrors: true
     ignoreErrors:
         # Defensive programming: checking types even when PHPDoc guarantees them.
         - '#Right side of && is always true#'
@@ -26,7 +26,4 @@ parameters:
         - '#Constant (ABSPATH|WP_PLUGIN_DIR) not found#'
         # WordPress Test Suite functions are only available when tests are run, not during static analysis
         - '#Function (tests_add_filter|_manually_load_package) (has no return type specified|not found)\.#'
-        - '#Undefined type \\WP_UnitTestCase\.#'
-        - '#Use of unknown class: \\WP_UnitTestCase\.#'
-        - '#Class .* extends unknown class WP_UnitTestCase\.#'
         - '#Call to an undefined (static )?method .*::(setUp|tearDown|assert.*|factory|setExpectedIncorrectUsage)\(\)\.#'
