@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `get_plugins()` entries and the `silverassist_settings_hub_plugin_actions` `$plugin` payload now always contain `capability`.
 - The dashboard cards and the tabs show only the plugins the current user can open, and the Dashboard tab is hidden for users without the dashboard capability. Calling `render_dashboard()` with no logged-in user now renders the empty state.
 - A plugin page stops with a 403 when it is rendered for a user who lacks the plugin's capability.
+- The `composer.json` description and the class docblock now say the hub adds a top-level Silver Assist menu, not "Settings > Silver Assist".
+- Removed the unused `slevomat/coding-standard` dev dependency from `composer.json`. No ruleset loads a Slevomat sniff; the package is still installed as a dependency of `silverassist/wp-coding-standards`.
 
 ### Fixed
 
@@ -44,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Documented the `capability` argument, its filters and the `option_page_capability_{group}` caveat (README, IMPLEMENTATION.md). Replaced the "Error 2: 403" troubleshooting entry, which wrongly said a missing `capability` caused 403 errors.
+- PHPDoc in `src/SettingsHub.php` now describes the registration window, re-registering a slug, the `plugin_file` first-non-empty rule, the action callback contract, and that the hub adds the submenu pages itself.
 
 ## [1.2.2] - 2026-09-25
 
