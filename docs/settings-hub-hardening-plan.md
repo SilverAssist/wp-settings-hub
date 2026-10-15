@@ -53,7 +53,7 @@ Lifecycle: `multi-session`. This applies because the work is phased by request, 
 
 ### WordPress core behaviour the design relies on (verified against WP 7.1.3)
 
-- `add_menu_page()` stores the item whatever the user's capability (`wp-admin/includes/plugin.php:1398-1419`).
+- `add_menu_page()` stores the item whatever the user's capability (`wp-admin/includes/plugin.php:1398-1459`; the capability only gates attaching the page callback at `:1407`).
 - `add_submenu_page()` drops the row and marks it in `$_wp_submenu_nopriv` for users without the capability (`plugin.php:1504-1507`).
 - `user_can_access_admin_page()` checks a submenu page against the **submenu's own** capability, never the parent's (`plugin.php:2234-2240`).
 - The top-level item stays visible while it has an accessible submenu (`wp-admin/includes/menu.php:175-200`), and it links to the first accessible submenu (`wp-admin/menu-header.php:157-173`).
@@ -161,9 +161,9 @@ Moving to `wp_add_inline_script()` is out of scope.
 
 **Version sync**
 
-- Bump `PACKAGE_VERSION` to the release version.
-- Add a unit test asserting that it equals the newest released `## [x.y.z]` heading in `CHANGELOG.md`, or the `[Unreleased]` target when one is declared.
-- Phase 1 adds the release-workflow check.
+- Phase 4 sets `PACKAGE_VERSION` to `1.2.2`, the newest released CHANGELOG heading, so the cache-busting version stops being stale.
+- It adds `test_package_version_matches_changelog`, which asserts the constant equals the first `## [x.y.z]` heading of `CHANGELOG.md` (`## [Unreleased]` is skipped). The test is red on `1.2.0` and green on `1.2.2`.
+- Phase 7 moves the `[Unreleased]` entries to `## [1.3.0]` and bumps the constant to `1.3.0` in the same commit, so the test, the release workflow check (Phase 1) and the tag agree.
 
 **CSS**
 
@@ -202,11 +202,14 @@ Remove these four, and replace the weak assertions of `test_wordpress_admin_menu
 - `test_enqueue_runs_through_admin_enqueue_scripts_hook`: fires `do_action( 'admin_enqueue_scripts', 'toplevel_page_silver-assist' )`.
 - `test_package_asset_url_primary_branch_requires_vendor_dir_and_file`
 - `test_package_asset_url_fallback_branch`
+- `test_hub_does_not_register_network_admin_menu`, in the multisite group. It documents the supported scope: per-site admin only.
+
+**New unit tests (Phase 2: they call `render_dashboard()` or `get_plugins()` directly, so they belong in `tests/Unit`)**
+
 - The action-button set: URL link escaped with its class, callback button id and `data-plugin`, empty label skipped, neither url nor callback skipped, and the `silverassist_settings_hub_plugin_actions` hook firing with `( $slug, $plugin )`.
 - `test_register_plugin_overwrites_same_slug_and_keeps_position`
 - `test_plugin_file_is_captured_only_from_first_registering_plugin`
 - `test_dashboard_escapes_untrusted_name_description_version_and_slug`
-- `test_hub_does_not_register_network_admin_menu`, in the multisite group. It documents the supported scope: per-site admin only.
 
 **Tests that need fixes from later phases**
 
@@ -248,7 +251,9 @@ These are added in Phase 4 alongside the fix, because they fail today:
 
 **Coverage**
 
-- Codecov stays non-blocking. The coverage threshold is deferred until Phase 2 lands real tests. Record the measured baseline in the plan JSON, then gate at that value minus 2 points.
+- Coverage is collected in exactly one job (PHP 8.2, WP latest, not multisite). The separate unit and integration steps run with `--no-coverage` in every job. The coverage job runs one extra step, `vendor/bin/phpunit --testsuite all`, and is the only job that uploads to Codecov.
+- Codecov stays non-blocking until the gate exists. The gate is set in Phase 6, once the Phase 4 tests have landed: record the percentage then, and require that value minus 2 points through a `codecov.yml` project status check.
+- Add `coverage.xml` to `.gitignore`, and confirm with `phpunit --list-tests` that the `unit`, `integration` and `all` suites never run a test twice (checked: 24 tests, no duplicates).
 
 **Local setup**
 
@@ -282,16 +287,25 @@ Corrections, besides documenting the Phase 3 and 4 behaviour:
 **`IMPLEMENTATION.md`**
 
 - Change PHP 8.3 to 8.2.
-- Rewrite "Error 2: 403" with the real causes: the user lacks the capability, the Dashboard needs the dashboard capability, registration came too late, or `option_page_capability_{group}` is missing.
+- Verify the "Error 2: 403" section that Phase 3 rewrites (the user lacks the capability, the Dashboard needs the dashboard capability, `option_page_capability_{group}` is missing) against the code. Phase 4 changes the "registration came too late" cause.
 - Rewrite "Error 4" to describe the `addEventListener` mechanism.
 - Remove "built-in update support", the embedded changelog and the version footer.
 - Trim the generic WordPress advice.
 - Fix the hook-priority guidance.
-- Add the Dashboard hook suffix and `get_plugin_page_hookname()`.
+- Add a "Registration timing" section with the supported window: call `register_plugin()` on any hook that fires before the end of `admin_menu` (`plugins_loaded`, `init`, or `admin_menu` at any priority). Outside `admin_menu` the hub calls `_doing_it_wrong()` and adds no submenu. This is the only place that states the window.
+- Link to the README for hook suffixes. The README owns the suffix table (`toplevel_page_silver-assist`, `silver-assist_page_{slug}`, and the `settings_page_{slug}` standalone fallback) and recommends `get_plugin_page_hookname()` over string literals. This file owns only the timing rule.
+- Add `plugin_file` to every `register_plugin()` example, use `^1.2`, and drop the Packagist link.
+- Reduce the update-button material to one example plus its explanation, and make the JavaScript action names consistent between examples. The README keeps a 5-line summary.
 
 **README**
 
-- Delete the duplicated Development section, the stray fence and the test counts.
+- Replace both Development sections (`README.md:450-554`, including the stray fence at `:512` and the test counts) with a 3-line pointer to `CONTRIBUTING.md`. Change "PHPUnit 10" (`README.md:19`) to "PHPUnit 9.6", and delete "Comprehensive test suite" and "100% test coverage for new features" (`README.md:561`).
+- Document the action contract: the callback receives `$plugin_slug`, is called at render time, and its echoed output becomes the body of `function ( event ) { ... }`; `url` wins over `callback`; an action with an empty label, or with neither `url` nor `callback`, is skipped; actions render only on dashboard cards.
+- State that `tab_title` labels both the sidebar item and the tab, that `name` is the page title, `<h1>` and card heading, that `version` shows on the card and in the page header badge, and that re-registering a slug replaces its data.
+- Add under Requirements and Menu Structure: "The hub registers its menu on `admin_menu` only. It supports single-site installs and the per-site admin of a multisite network, and registers nothing in the network admin or user admin."
+- Replace the shield emoji at `README.md:94` with "inline SVG icon".
+- Make every link to `IMPLEMENTATION.md`, `CONTRIBUTING.md` and `integration-guide.php` an absolute `https://github.com/SilverAssist/wp-settings-hub/blob/main/...` URL, because the release zip ships only `src/`, `assets/`, `vendor/`, `composer.json`, `LICENSE.md`, `README.md` and `CHANGELOG.md`.
+- Remove the undocumented helper classes (`silverassist-plugin-settings`, `silverassist-settings-page`, ...) from the README and `integration-guide.php` examples, or add their styles.
 - Document that `tab_title` also labels the sidebar item, that tabs default to on, and the `plugin_file` resolution rules (first wins, silent failure outside `ABSPATH`).
 - Add a consolidated "Hooks and filters" table.
 - Fix the broken `IMPLEMENTATION.md` anchor.
@@ -304,6 +318,10 @@ Corrections, besides documenting the Phase 3 and 4 behaviour:
 - State the prerequisites: svn, a running MySQL and the token.
 - Document the `.githooks/commit-msg` hook and the `SilverAssistWP` ruleset.
 - State the `TICKET: subject` commit convention and mention the audit CI job.
+- Update the layout tree and the test-location paragraphs (`tests/Unit`, `tests/Integration`, `assets/`, `scripts/`, `.githooks/`). Say that the unit suite still boots WordPress and MySQL (no mock-only tier).
+- Explain that the `skip-database-creation` argument (`true`) is only valid when the database already exists, as in CI with the service container.
+- Document once that `composer test` runs without coverage and `composer phpunit` writes coverage reports.
+- Use one spelling, "Silver Assist", and explain `security@` versus `support@`.
 
 **Wording**
 
@@ -313,20 +331,23 @@ Corrections, besides documenting the Phase 3 and 4 behaviour:
 
 - Text domain: either load `silverassist-settings-hub` and ship a `.pot` file, or state that hub strings are not translatable yet. The default is to state it, because loading needs a languages path inside `vendor/`.
 - Remove the `slevomat/coding-standard` dev dependency, or wire it into the ruleset. The default is to remove it, because the shared ruleset owns standards.
+- Delete `.packagist.yml`, or state in `CONTRIBUTING.md` why it remains, since the package is documented as installed through a `vcs` repository.
+- Update the `src/SettingsHub.php` class docblock wording and the PHPDoc at `:179-180` ("before plugins register their submenus"; the hub registers the submenus itself).
 - Leave historical CHANGELOG entries untouched.
 
 #### PHPStan (Phase 6)
 
 - Set `reportUnmatchedIgnoredErrors: true` and delete the 3 stale test patterns.
 - Introduce `@phpstan-type PluginData array{...}` with `@phpstan-import-type` / `@phpstan-param` on the private renderers. Narrow the `$args` reads.
-- Delete the broad `Cannot cast`, `does not accept`, `expects string`, `expects callable` and `esc_html` ignores until `src/` passes with only the `ABSPATH` and WordPress-test-suite ignores.
+- Delete the broad `Right side of && is always true`, `Cannot cast`, `does not accept`, `expects string`, `expects callable` and `esc_html` ignores until `src/` passes with only the `ABSPATH` and WordPress-test-suite ignores.
 - Upgrade to `phpstan/phpstan ^2.1` and `szepeviktor/phpstan-wordpress ^2.0` in a separate commit. If the upgrade surfaces too much in `tests/`, generate a baseline for `tests/` only and log it as a follow-up.
 
 #### Release (Phase 7)
 
 - Move the `[Unreleased]` entries to `## [1.3.0]` and add the compare links. The `[1.2.2]` link is missing today and `[Unreleased]` still compares from `v1.2.1`.
-- Bump `PACKAGE_VERSION` to `1.3.0`, then tag `v1.3.0`. Release CI validates the tag, CHANGELOG and constant together.
-- In `silver-assist-security`, run `composer update silverassist/wp-settings-hub` and its full test suite. Confirm that its `'capability' => 'manage_options'` registration renders identically.
+- Bump `PACKAGE_VERSION` to `1.3.0` in the same commit, then tag `v1.3.0`. Release CI validates the tag, CHANGELOG and constant together.
+- **Before tagging**, verify the consumer: in `silver-assist-security`, require the merged commit with `composer require silverassist/wp-settings-hub:dev-main as 1.3.0` (or a path repository) and run its full test suite. Confirm that its `'capability' => 'manage_options'` registration renders identically. Tags are immutable, so this is the safety net.
+- **After the release**, run `composer update silverassist/wp-settings-hub` in the consumer and confirm the lock resolves `1.3.0`.
 
 ### API Changes
 
@@ -350,7 +371,7 @@ Corrections, besides documenting the Phase 3 and 4 behaviour:
 | Removing `phpcbf \|\| true` turns CI red on existing fixable violations | Low (PHPCS passes today) | Low | Run `composer phpcs` locally before pushing Phase 1. |
 | WordPress 6.5 matrix job fails on APIs used by tests (not `src`) | Medium | Low | Fix the tests, or skip specific cases with a version guard. `src/` uses only long-standing APIs. |
 | PHPStan 2.x upgrade surfaces many test-file errors | High | Low | Limit Phase 6 to `src/` cleanliness. Baseline `tests/` and log a follow-up. |
-| The consumer (`silver-assist-security`) relies on undocumented behaviour (e.g. CSS loading on `settings_page_silver-assist-security`) | Medium | Medium | Phase 7 runs its full suite, including e2e if available, against 1.3.0 before the tag is announced. The consumer enqueues its own assets for its standalone page. |
+| The consumer (`silver-assist-security`) relies on undocumented behaviour (e.g. CSS loading on `settings_page_silver-assist-security`) | Medium | Medium | Phase 7 runs its full suite, including e2e if available, against the merged `main` (as `dev-main`) before the tag is created. The consumer enqueues its own assets for its standalone page. |
 | Doc consolidation deletes content someone links to | Low | Low | Keep headings that are link targets, leaving a one-line pointer where content moved. |
 
 ## Phase Breakdown
@@ -369,6 +390,8 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 - [ ] Correct the `actions/checkout` pin comments to `# v7.0.1`, and SHA-pin `actions/github-script` (`3a2844b7… # v9`).
 - [ ] `release.yml`: validate `PACKAGE_VERSION` against the tag, and fix the `workflow_dispatch` `VERSION` derivation.
 - [ ] Replace `scripts/install-wp-tests.sh` with the shared-script wrapper. Drop the hardcoded `WP_TESTS_DIR` env and the relative polyfills const from `phpunit.xml`. Fix the bootstrap install hint.
+- [ ] `scripts/run-quality-checks.sh`: remove the `phpcbf` step from `all` and drop `--warning-severity=0`, so a clean local run matches `composer phpcs` and CI.
+- [ ] Add `coverage.xml` to `.gitignore`, and confirm the `unit`, `integration` and `all` suites never run a test twice.
 
 **Validation:** CI is green on the PR with the new matrix. A deliberately introduced PHPCS violation (local experiment, not committed) fails `composer phpcs`. `bash scripts/install-wp-tests.sh wp_settings_hub_test root '' 127.0.0.1 latest` followed by `vendor/bin/phpunit` works on macOS with no extra env vars.
 
@@ -380,9 +403,10 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 - [ ] Unit `setUp` logs in an administrator.
 - [ ] Delete the 4 fake integration tests and strengthen `test_wordpress_admin_menu_integration`.
 - [ ] Add the characterisation tests listed under "Tests (Phase 2 …)" above.
-- [ ] Move pure-render duplicates out of the integration file, so the integration suite only holds WordPress-driven flows.
+- [ ] Apply the integration rule: an integration test must read `$menu`, `$submenu`, `wp_styles()`, `user_can_access_admin_page()` or the output of the callback WordPress registered (`get_plugin_page_hook()` / `$wp_filter`). Tests that call `render_dashboard()` or `get_plugins()` directly live in `tests/Unit`.
+- [ ] Delete the vacuous `test_enqueue_styles_not_on_other_pages` (it passes with the filter removed, because URL resolution returns `''` without `plugin_file`). The Phase 4 exact-suffix test replaces it. Extend `test_enqueue_styles_on_silver_assist_page` to assert `src` and `ver`.
 - [ ] Optional: port `scripts/run-phpunit-complete.sh` from `silver-assist-security`, which catches a test that calls `exit`.
-- [ ] Record the coverage baseline from CI (Codecov) in the plan JSON.
+- [ ] Informational: note the Codecov percentage in the plan JSON log. The coverage gate itself is set in Phase 6, after the Phase 4 tests have landed.
 
 **Validation:** all suites green locally and in CI, including WP 6.5 and multisite. Every integration test fails if `register_menus`, `enqueue_styles` or the render path is stubbed out. Spot-check by temporarily breaking each one.
 
@@ -403,7 +427,7 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
   - the callback renders for the editor;
   - the guard calls `wp_die`;
   - regression: the `silver-assist-security`-style call renders identically.
-- [ ] Docs: README API reference (argument and filters), the `IMPLEMENTATION.md` capability sections and "Error 2" rewrite, the `option_page_capability_{group}` caveat, `integration-guide.php` example, and a CHANGELOG `[Unreleased]` entry.
+- [ ] Docs: README API reference (argument and filters), the `IMPLEMENTATION.md` capability sections and "Error 2" rewrite, the `option_page_capability_{group}` caveat, `integration-guide.php` example, and a CHANGELOG `[Unreleased]` entry. The entry says: Added the optional `capability` argument and the filters `silverassist_settings_hub_plugin_capability` and `silverassist_settings_hub_dashboard_capability`. Changed: `get_plugins()` entries and the `silverassist_settings_hub_plugin_actions` `$plugin` payload now always contain `capability`; `render_dashboard()` and the tabs show only plugins the current user can access, so calling `render_dashboard()` with no logged-in user renders the empty state.
 
 **Validation:** suite green. Manual check in a local WordPress install: log in as an editor and confirm that the "Silver Assist" menu shows only the `edit_posts` plugin, that `admin.php?page=silver-assist` returns 403, and that the plugin page renders without a Dashboard tab.
 
@@ -415,7 +439,8 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 - [ ] Exact hook-suffix match derived from core, plus a test with a translated parent title.
 - [ ] `__wakeup()` throws `\LogicException`.
 - [ ] Action-button contract: pass `event`, give unique ids, fix the comment, add tests.
-- [ ] `PACKAGE_VERSION` bump and the CHANGELOG-sync unit test.
+- [ ] Set `PACKAGE_VERSION` to `1.2.2` and add the CHANGELOG-sync unit test (see "Version sync").
+- [ ] State the supported registration window in the `register_plugin()` PHPDoc. The long-form text lands in Phase 5 (`IMPLEMENTATION.md`, "Registration timing").
 - [ ] Fix or remove the dead `@container` rule.
 - [ ] Add the five "need fixes from later phases" tests listed above.
 - [ ] Add a CHANGELOG `[Unreleased]` entry.
@@ -431,7 +456,7 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 - [ ] Remove or wire in `slevomat/coding-standard`, and decide the text-domain wording.
 - [ ] Run `core-review --budget thorough` and re-run until it reports nothing new.
 
-**Validation:** `core-review` is clean. Spot-check every code-like snippet in the docs against `src/SettingsHub.php`. All internal links and anchors resolve.
+**Validation:** `core-review` is clean. Spot-check every code-like snippet in the docs against `src/SettingsHub.php`. All internal links and anchors resolve, and every link to a file missing from the release zip is an absolute GitHub URL.
 
 ### Phase 6: PHPStan tightening
 
@@ -440,6 +465,7 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 - [ ] Set `reportUnmatchedIgnoredErrors: true` and remove the stale patterns.
 - [ ] Add a `PluginData` PHPStan type alias, narrow the `$args` reads, and delete the broad ignores so `src/` passes cleanly.
 - [ ] Upgrade to PHPStan 2.x in a separate commit, baselining `tests/` only if needed and logging it as a follow-up.
+- [ ] Set the coverage gate: record the Codecov percentage after Phase 4 has merged, then add a `codecov.yml` project status check at that value minus 2 points.
 
 **Validation:** `composer phpstan` passes. `src/` passes with only the `ABSPATH` / test-suite ignores.
 
@@ -447,11 +473,13 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 
 **Objective:** ship, and prove the only consumer is unaffected.
 
-- [ ] CHANGELOG `[1.3.0]` entry and compare links, `PACKAGE_VERSION = '1.3.0'`, tag `v1.3.0`, release workflow green.
-- [ ] `silver-assist-security`: update the dependency and run its full suite (unit, integration, plus e2e if available). Record the result in the JSON.
+- [ ] CHANGELOG `[1.3.0]` entry and compare links (moving the `[Unreleased]` entries), and `PACKAGE_VERSION = '1.3.0'` in the same commit.
+- [ ] After the Phase 7 PR is merged and **before tagging**, run the `silver-assist-security` suite (unit, integration, plus e2e if available) against the merged commit as `dev-main as 1.3.0`. Record the result in the JSON.
+- [ ] Only if green, tag `v1.3.0` and confirm the release workflow.
+- [ ] After the release, run `composer update silverassist/wp-settings-hub` in the consumer and confirm the lock resolves `1.3.0`.
 - [ ] Close #48.
 
-**Validation:** the GitHub release exists with the zip, and the consumer suite is green against 1.3.0.
+**Validation:** the consumer suite was green before the tag, the GitHub release exists with the zip, and the consumer lock resolves 1.3.0.
 
 ## Testing Strategy
 
@@ -487,6 +515,15 @@ Branch naming: `48-phase-<n>-<slug>`, created from an up-to-date `main` with `gh
 - Every phase is an isolated PR. Revert the merge commit of the offending phase.
 - Phase 3 is additive. If it misbehaves for consumers, revert it and tag `v1.3.1` from the reverted `main`. Consumers on `^1.2` fall back to the previous behaviour on their next `composer update`. Do not delete or move existing tags, because tags are immutable by policy.
 - CI changes (Phase 1) can be reverted independently. They do not affect the shipped package.
+
+## Out of scope (logged as follow-ups on #48)
+
+- A hub helper for `option_page_capability_{group}`. The caveat is documented only.
+- A separate capability for action buttons. Actions inherit the plugin capability, and cards are already hidden from users without it.
+- Locking `name`, `slug` and `callback` against `$args` overrides (kept for backwards compatibility).
+- An integration test that saves through the Settings API with a lowered capability.
+- Logging, or a filter, when the stylesheet URL cannot be resolved. The silent failure is documented.
+- Stricter `phpunit.xml` settings (`backupGlobals`, error conversion), a `plugins_loaded` fixture plugin, and a WordPress trunk job.
 
 ## Dependencies
 
