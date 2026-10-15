@@ -146,7 +146,7 @@
       "title": "Phase 2: Test infrastructure and real integration tests",
       "kind": "phase",
       "status": "in-progress",
-      "notes": "Branch: 48-phase-2-integration-tests. Characterise current behaviour through real WordPress before any behaviour change. See the test list in the plan's 'Tests (Phase 2, extended in Phases 3 and 4)' section.",
+      "notes": "Branch: 48-phase-2-integration-tests. Characterise current behaviour through real WordPress before any behaviour change. See the test list in the plan's 'Tests (Phase 2, extended in Phases 3 and 4)' section. The base TestCase also sets the admin screen for every test, because core admin_enqueue_scripts callbacks fatal without one.",
       "findings": [
         "Only 1 of 8 integration tests drives WordPress admin state (test_wordpress_admin_menu_integration), and it only asserts $submenu is non-empty.",
         "Fake or vacuous: test_capabilities_check_for_settings_access (asserts core current_user_can only), test_admin_menu_hook_registration (admin_menu already has callbacks without the hub; comment about the constructor is false), test_plugin_callback_execution (calls the stored closure directly), test_tabs_navigation_with_multiple_plugins ($_GET['page'] is never read by src; active tab never asserted).",
@@ -167,42 +167,47 @@
         },
         {
           "id": "unit-setup-logs-in-administrator",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "Unit setUp calls login_as(administrator)."
         },
         {
           "id": "remove-fake-integration-tests",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "Removed test_capabilities_check_for_settings_access, test_admin_menu_hook_registration, test_plugin_callback_execution and test_tabs_navigation_with_multiple_plugins; also the three render-only duplicates."
         },
         {
           "id": "add-characterisation-integration-tests",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "SettingsHubIntegrationTest (13 tests: menu tree, tab_title, registered callbacks, active tab, tabs off, access by role, no network admin hooks, priority 5) and the new StylesIntegrationTest (10 tests: handle, src, ver, hook wiring and suffixes, asset URL branches, plugin_file precedence)."
         },
         {
           "id": "dedupe-render-tests-between-suites",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "Moved to the unit tier and extended: several plugins at once, Configure link, registration order."
         },
         {
           "id": "apply-integration-rule-move-render-tests-to-unit",
-          "status": "not-started",
-          "notes": "Integration tests must read $menu, $submenu, wp_styles(), user_can_access_admin_page() or the callback WordPress registered. Tests that call render_dashboard() or get_plugins() directly go to tests/Unit: overwrite-same-slug, plugin_file first wins, the action-button cases and the escaping test."
+          "status": "completed",
+          "notes": "Integration tests read $menu, $submenu, user_can_access_admin_page() or the callback WordPress registered; the render-only tests live in tests/Unit."
         },
         {
           "id": "replace-vacuous-enqueue-negative-test",
-          "status": "not-started",
-          "notes": "Delete tests/Unit test_enqueue_styles_not_on_other_pages (passes with the filter removed). Extend test_enqueue_styles_on_silver_assist_page to assert src and ver. Phase 4 adds the exact-suffix test."
+          "status": "completed",
+          "notes": "Deleted test_enqueue_styles_not_on_other_pages; test_enqueue_styles_on_silver_assist_page now uses make_vendor_fixture() and asserts src and ver."
         },
         {
           "id": "optional-port-run-phpunit-complete",
-          "status": "not-started"
+          "status": "not-started",
+          "notes": "Skipped: optional. Not needed yet; revisit if a test ever calls exit."
         },
         {
           "id": "record-coverage-baseline",
           "status": "not-started",
-          "notes": "Informational only. The coverage gate is set in Phase 6 (task ci-coverage-gate), after the Phase 4 tests have landed."
+          "notes": "Not measurable locally (no xdebug or pcov). Read the percentage from the Codecov report of the Phase 2 PR for the log; the gate itself is Phase 6."
         },
         {
           "id": "verify",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "review",
@@ -217,6 +222,14 @@
         {
           "date": "2026-10-15",
           "summary": "Shared TestCase written; 24 existing tests and PHPStan still green. Remaining test work is split by file so it can be written in parallel worktrees: integration menu tests, integration styles tests, unit-tier tests."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Tests written in three parallel git worktrees by Sonnet subagents (menu integration, styles integration, unit tier) and merged by cherry-pick; the worktrees start at main, not at the phase branch, so each agent first reset its own empty branch to the phase tip. The unit track had to be re-run because its first agent stopped on a denied merge. Result: 53 tests (was 24), 250 assertions, green on WP 7.1.3 and with WP_MULTISITE=1, phpcs and phpstan clean, no test run twice."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Independent mutation check (scratch script, 20 hand-written mutants of src/SettingsHub.php applied one at a time to a throwaway copy): the old suite killed 6 of 20, the new suite kills 20 of 20. The mutants cover menu registration, capability, page callback, active tab, hook priority, menu position, enqueue, version, hook-suffix guard, asset path, escaping, action hook, plugin_file handling, empty label, button id, tabs flag and tab title."
         }
       ]
     },
@@ -225,7 +238,7 @@
       "title": "Phase 3: Per-plugin capability",
       "kind": "phase",
       "status": "not-started",
-      "notes": "Branch: 48-phase-3-capability. Implement then document. Design decisions (correct here if the owner disagrees): parent menu and Dashboard stay manage_options, filterable via silverassist_settings_hub_dashboard_capability; per-plugin filter silverassist_settings_hub_plugin_capability; invalid values fail closed to manage_options with _doing_it_wrong; validation regex ^[A-Za-z0-9_-]+$ (no sanitize_key, it lowercases); cards and tabs filtered with current_user_can; Dashboard tab hidden without the dashboard capability; wp_die(403) guard in render_plugin_page; capability assigned after array_merge.",
+      "notes": "Branch: 48-phase-3-capability. Implement then document. Design decisions (correct here if the owner disagrees): parent menu and Dashboard stay manage_options, filterable via silverassist_settings_hub_dashboard_capability; per-plugin filter silverassist_settings_hub_plugin_capability; invalid values fail closed to manage_options with _doing_it_wrong; validation regex ^[A-Za-z0-9_-]+$ (no sanitize_key, it lowercases); cards and tabs filtered with current_user_can; Dashboard tab hidden without the dashboard capability; wp_die(403) guard in render_plugin_page; capability assigned after array_merge. The Phase 2 access tests (test_administrator_can_access_every_hub_page, test_editor_and_subscriber_cannot_access_hub_pages) carry comments saying Phase 3 extends them; replace the editor/subscriber expectations as the capability work lands.",
       "findings": [
         "src/SettingsHub.php:295, :307 and :322 hardcode manage_options; register_plugin() never reads $args['capability'].",
         "IMPLEMENTATION.md:169, :250-280 and :1165 call the argument required since v1.1.1 and blame 403 errors on omitting it; that is false.",
@@ -300,7 +313,11 @@
         "__wakeup() is public and empty: unserialize(serialize($hub)) !== $hub.",
         "Callback actions print raw output inside a <script> click listener with no event parameter, run at render time, can collide on button id (sanitize_key of slug-label), and the code comment says AJAX although nothing is wired.",
         "PACKAGE_VERSION is '1.2.0' at v1.2.2 and is the stylesheet ver; v1.2.1 changed the CSS.",
-        "assets/css/settings-hub.css:299-303 queries the container element itself (@container on .silverassist-dashboard-grid), which can never match."
+        "assets/css/settings-hub.css:299-303 queries the container element itself (@container on .silverassist-dashboard-grid), which can never match.",
+        "Confirmed by a reproduction in Phase 2: registering from an admin_menu callback at priority 10 leaves the plugin out of $submenu in that request.",
+        "Slugs are not sanitised by register_plugin(): a slug containing < or > only survives escaping, and esc_url strips those characters from the Configure link, so the link no longer matches the registered page slug. Decide whether to sanitise the slug or document the allowed characters.",
+        "sanitize_key() strips spaces without a hyphen, so labels such as \"Run Now\" and \"RunNow\" on the same plugin produce the same button id (sa-action-<slug>-runnow); the unique-id work in this phase covers it.",
+        "The fallback success branch of get_package_asset_url() (package under ABSPATH) cannot be exercised in a test run, because the repository is never inside the WordPress install. Only its failure path is covered."
       ],
       "tasks": [
         {
@@ -370,7 +387,8 @@
         "Install docs mix Packagist badges and plain composer require with the private vcs-repository requirement; CONTRIBUTING omits the token needed for dev dependencies.",
         "copilot-instructions.md documents a non-existent `composer phpcs:fix`, a stale file tree, add_options_page and the Settings API, and Slevomat (a dev dependency no ruleset uses).",
         "Undocumented: tab_title also labels the sidebar submenu; plugin_file is first-wins and fails silently outside ABSPATH; the Dashboard hook suffix toplevel_page_silver-assist; the action callback signature; the silverassist-settings-hub text domain is never loaded.",
-        "IMPLEMENTATION.md:351 describes onclick attributes; the code uses an addEventListener <script> block."
+        "IMPLEMENTATION.md:351 describes onclick attributes; the code uses an addEventListener <script> block.",
+        "The register_plugin() docblock says plugin_file is taken from the \"first plugin that registers\"; the code keeps the first NON-EMPTY plugin_file (src/SettingsHub.php:140-142). Pinned by StylesIntegrationTest::test_first_non_empty_plugin_file_wins_when_earlier_registrations_have_none."
       ],
       "tasks": [
         {
@@ -554,6 +572,10 @@
     {
       "date": "2026-10-15",
       "summary": "Phase 1 merged (PR #50). Phase 2 started on 48-phase-2-integration-tests."
+    },
+    {
+      "date": "2026-10-15",
+      "summary": "Phase 2 implemented on 48-phase-2-integration-tests: 53 tests, mutation score 6/20 to 20/20. Waiting for the PR checks."
     }
   ]
 }
