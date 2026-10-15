@@ -40,6 +40,8 @@ final class My_Silver_Assist_Plugin {
 	 */
 	public function init(): void {
 		// Register WordPress hooks.
+		// 'init' fires before 'admin_menu', so this registration is inside the hub's supported window.
+		// Registering on or before 'admin_menu' is the rule, see IMPLEMENTATION.md, "Registration Timing".
 		add_action( 'init', [ $this, 'register_with_settings_hub' ] );
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
 	}
@@ -78,11 +80,16 @@ final class My_Silver_Assist_Plugin {
 						'url'   => admin_url( 'update-core.php' ),
 						'class' => 'button',
 					],
-					// Example: Add custom action with callback.
+					// Example: Add a custom action with a callback.
+					// The callback runs while the dashboard renders and receives the plugin slug.
+					// What it prints must be JavaScript: it becomes the body of the button's click
+					// handler, function ( event ) { ... }, so "event" is the click event. The hub
+					// does not escape the output, so escape what you print.
 					[
 						'label'    => 'Clear Cache',
-						'callback' => function() {
-							echo 'console.log("Cache cleared!");';
+						'callback' => function ( string $slug ): void {
+							echo 'event.target.disabled = true;';
+							echo 'console.log("Cache cleared for ' . esc_js( $slug ) . '");';
 						},
 						'class'    => 'button',
 					],
@@ -350,7 +357,10 @@ class Existing_Plugin {
  *
  * 3. **Use Unique Slugs**: Ensure your plugin slug is unique across all
  *    Silver Assist plugins to avoid conflicts. Registering a slug that is
- *    already registered replaces the earlier registration silently.
+ *    already registered replaces the earlier registration silently. The hub
+ *    does not sanitise slugs: stick to lowercase letters, digits, hyphens and
+ *    underscores, because the slug is the menu slug, the ?page= value, the
+ *    tail of the hook suffix and the base of the button ids.
  *
  * 4. **Version Display**: Include your plugin version in the registration args
  *    so it appears on the dashboard card and in the page header.
@@ -362,10 +372,20 @@ class Existing_Plugin {
  *    add_settings_section, etc.) as normal. The hub only handles menu creation.
  *
  * 7. **Translations**: Use your plugin's text domain for all strings in your
- *    settings page. The hub uses 'silverassist-settings-hub' for its own strings.
+ *    settings page. The hub uses 'silverassist-settings-hub' for its own strings,
+ *    but it ships no translation files yet, so those strings are not translatable.
  *
  * 8. **Custom Actions**: You can add custom action buttons to the dashboard cards
  *    using the 'actions' parameter. This is useful for features like "Check Updates".
+ *    A 'url' action renders a link and wins over a 'callback'. A 'callback' action
+ *    prints JavaScript that becomes the click handler's body (see the example above).
+ *
+ * 9. **Hook Suffixes**: If you enqueue assets only on your own page, do not type the
+ *    hook suffix. The hub page is '{prefix}_page_{slug}' where the prefix follows the
+ *    possibly translated "Silver Assist" menu title. Ask WordPress instead:
+ *    get_plugin_page_hookname( 'my-plugin', 'silver-assist' ) for the hub page and
+ *    get_plugin_page_hookname( 'my-plugin', 'options-general.php' ) for the standalone
+ *    page. See README.md, "Hook suffixes".
  */
 
 /**
@@ -542,13 +562,15 @@ class My_Plugin_With_Updates {
 		}
 	}
 
+	// Callback of the 'Check Updates' action. The hub wires no AJAX itself: this prints the body of
+	// the click handler, where "event" is the click event, and the AJAX endpoint is the plugin's own
+	// (wp_ajax_my_plugin_check_updates above). Escape everything you print, the hub does not.
 	public function render_check_updates_script( string $plugin_slug ): void {
-		// Output JavaScript to check for updates via AJAX
 		?>
 		var button = event.target;
 		var originalText = button.textContent;
 		button.disabled = true;
-		button.textContent = '<?php esc_html_e( 'Checking...', 'my-plugin' ); ?>';
+		button.textContent = '<?php echo esc_js( __( 'Checking...', 'my-plugin' ) ); ?>';
 
 		jQuery.post(ajaxurl, {
 			action: 'my_plugin_check_updates',
@@ -556,14 +578,14 @@ class My_Plugin_With_Updates {
 		}).done(function(response) {
 			if (response.success) {
 				if (response.data.update_available) {
-					button.textContent = '<?php esc_html_e( 'Update Available!', 'my-plugin' ); ?>';
+					button.textContent = '<?php echo esc_js( __( 'Update Available!', 'my-plugin' ) ); ?>';
 					button.classList.add('button-primary');
 					// Redirect to updates page after 1.5 seconds
 					setTimeout(function() {
 						window.location.href = '<?php echo esc_js( admin_url( 'update-core.php' ) ); ?>';
 					}, 1500);
 				} else {
-					button.textContent = '<?php esc_html_e( 'Up to Date', 'my-plugin' ); ?>';
+					button.textContent = '<?php echo esc_js( __( 'Up to Date', 'my-plugin' ) ); ?>';
 					// Reset button after 2 seconds
 					setTimeout(function() {
 						button.textContent = originalText;
@@ -571,7 +593,7 @@ class My_Plugin_With_Updates {
 					}, 2000);
 				}
 			} else {
-				button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+				button.textContent = '<?php echo esc_js( __( 'Error', 'my-plugin' ) ); ?>';
 				console.error('Update check failed:', response.data ? response.data.message : 'Unknown error');
 				// Reset button after 2 seconds
 				setTimeout(function() {
@@ -580,7 +602,7 @@ class My_Plugin_With_Updates {
 				}, 2000);
 			}
 		}).fail(function(xhr, status, error) {
-			button.textContent = '<?php esc_html_e( 'Error', 'my-plugin' ); ?>';
+			button.textContent = '<?php echo esc_js( __( 'Error', 'my-plugin' ) ); ?>';
 			console.error('AJAX failed:', error);
 			// Reset button after 2 seconds
 			setTimeout(function() {

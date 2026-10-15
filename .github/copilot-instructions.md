@@ -39,7 +39,7 @@ The tests extend `WP_UnitTestCase`, so they need the WordPress Test Suite and a 
 
 ## Documentation
 
-- [README](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md): install, menu structure, API reference
+- [README](https://github.com/SilverAssist/wp-settings-hub/blob/main/README.md): install, menu structure and hook suffixes, API reference, hooks and filters
 - [CONTRIBUTING](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md): local setup, tests, quality checks, commit convention, release checklist
 - [Design system](https://github.com/SilverAssist/wp-settings-hub/blob/main/docs/design-system.md): tokens, components and accessibility rules for the hub UI
-- [IMPLEMENTATION](https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md): integration guide for plugin authors
+- [IMPLEMENTATION](https://github.com/SilverAssist/wp-settings-hub/blob/main/IMPLEMENTATION.md): integration guide for plugin authors, including the registration timing rule and common errors
