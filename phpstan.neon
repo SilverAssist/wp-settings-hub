@@ -5,8 +5,8 @@ parameters:
         - tests
     excludePaths:
         - vendor
-        - coverage
-        - .phpunit.cache
+        - coverage (?)
+        - .phpunit.cache (?)
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
@@ -17,3 +17,11 @@ parameters:
         - tests/phpstan/wp-test-suite-stubs.php
     # Every ignore must match something, so a fixed problem cannot leave a stale pattern behind.
     reportUnmatchedIgnoredErrors: true
+    ignoreErrors:
+        # The e2e fixture requires this repository through WP_PLUGIN_DIR, because the Playground server
+        # mounts the repository at wp-content/plugins/wp-settings-hub. That path does not exist where
+        # the analysis runs.
+        -
+            identifier: requireOnce.fileNotFound
+            path: tests/e2e/fixtures/settings-hub-e2e/settings-hub-e2e.php
+            count: 1

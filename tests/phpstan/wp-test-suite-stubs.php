@@ -28,7 +28,7 @@ define( 'WP_PLUGIN_DIR', '/var/www/html/wp-content/plugins' );
  * @return true
  */
 function tests_add_filter( string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1 ): bool {
-	return true;
+	return add_filter( $hook_name, $callback, $priority, $accepted_args );
 }
 
 /**

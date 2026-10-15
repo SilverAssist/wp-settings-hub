@@ -145,7 +145,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringContainsString( 'Silver Assist', $output, 'Should contain title' );
 		$this->assertStringContainsString( 'No Silver Assist plugins have been registered yet', $output, 'Should show no plugins message' );
@@ -173,7 +172,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringContainsString( 'Test Plugin', $output, 'Should contain plugin name' );
 		$this->assertStringContainsString( 'Test description', $output, 'Should contain plugin description' );
@@ -200,7 +198,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringContainsString( 'nav-tab-wrapper', $output, 'Should contain tabs navigation' );
 		$this->assertStringContainsString( 'Dashboard', $output, 'Should contain Dashboard tab' );
@@ -319,7 +316,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringNotContainsString( 'nav-tab-wrapper', $output, 'Should not contain tabs navigation' );
 	}
@@ -346,7 +342,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		// Check for new CSS classes.
 		$this->assertStringContainsString( 'silverassist-dashboard-description', $output, 'Should use dashboard description class' );
@@ -373,7 +368,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringContainsString( 'silverassist-empty-state', $output, 'Should use empty state class' );
 		$this->assertStringContainsString( 'dashicons-admin-plugins', $output, 'Should contain dashicon' );
@@ -398,7 +392,6 @@ final class SettingsHubTest extends TestCase {
 		$hub->render_dashboard();
 		$output = ob_get_clean();
 
-		$this->assertNotFalse( $output, 'Output should not be false' );
 		$this->assertIsString( $output, 'Output should be a string' );
 		$this->assertStringContainsString( 'silverassist-hub-tabs', $output, 'Should use hub tabs class' );
 		// Verify nav-tab-wrapper has no inline style attribute.
