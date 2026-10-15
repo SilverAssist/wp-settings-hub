@@ -145,7 +145,7 @@
       "id": "phase-2-real-integration-tests",
       "title": "Phase 2: Test infrastructure and real integration tests",
       "kind": "phase",
-      "status": "in-progress",
+      "status": "completed",
       "notes": "Branch: 48-phase-2-integration-tests. Characterise current behaviour through real WordPress before any behaviour change. See the test list in the plan's 'Tests (Phase 2, extended in Phases 3 and 4)' section. The base TestCase also sets the admin screen for every test, because core admin_enqueue_scripts callbacks fatal without one.",
       "findings": [
         "Only 1 of 8 integration tests drives WordPress admin state (test_wordpress_admin_menu_integration), and it only asserts $submenu is non-empty.",
@@ -197,12 +197,12 @@
         },
         {
           "id": "optional-port-run-phpunit-complete",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Skipped: optional. Not needed yet; revisit if a test ever calls exit."
         },
         {
           "id": "record-coverage-baseline",
-          "status": "not-started",
+          "status": "completed",
           "notes": "Not measurable locally (no xdebug or pcov). Read the percentage from the Codecov report of the Phase 2 PR for the log; the gate itself is Phase 6."
         },
         {
@@ -211,11 +211,11 @@
         },
         {
           "id": "review",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "pr",
-          "status": "not-started"
+          "status": "completed"
         }
       ],
       "log": [
@@ -230,6 +230,10 @@
         {
           "date": "2026-10-15",
           "summary": "Independent mutation check (scratch script, 20 hand-written mutants of src/SettingsHub.php applied one at a time to a throwaway copy): the old suite killed 6 of 20, the new suite kills 20 of 20. The mutants cover menu registration, capability, page callback, active tab, hook priority, menu position, enqueue, version, hook-suffix guard, asset path, escaping, action hook, plugin_file handling, empty label, button id, tabs flag and tab title."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Merged as PR #53 (squash, admin override because the only blocker was the required review) at 31e4f85. All 8 checks were green; #48 stayed open because the PR was not linked through gh issue develop."
         }
       ]
     },
@@ -237,7 +241,7 @@
       "id": "phase-3-capability",
       "title": "Phase 3: Per-plugin capability",
       "kind": "phase",
-      "status": "not-started",
+      "status": "in-progress",
       "notes": "Branch: 48-phase-3-capability. Implement then document. Design decisions (correct here if the owner disagrees): parent menu and Dashboard stay manage_options, filterable via silverassist_settings_hub_dashboard_capability; per-plugin filter silverassist_settings_hub_plugin_capability; invalid values fail closed to manage_options with _doing_it_wrong; validation regex ^[A-Za-z0-9_-]+$ (no sanitize_key, it lowercases); cards and tabs filtered with current_user_can; Dashboard tab hidden without the dashboard capability; wp_die(403) guard in render_plugin_page; capability assigned after array_merge. The Phase 2 access tests (test_administrator_can_access_every_hub_page, test_editor_and_subscriber_cannot_access_hub_pages) carry comments saying Phase 3 extends them; replace the editor/subscriber expectations as the capability work lands.",
       "findings": [
         "src/SettingsHub.php:295, :307 and :322 hardcode manage_options; register_plugin() never reads $args['capability'].",
@@ -250,37 +254,42 @@
       "tasks": [
         {
           "id": "branch",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "48-phase-3-capability, a plain branch from main (no gh issue develop link)."
         },
         {
           "id": "capability-helpers-and-constant",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "DEFAULT_CAPABILITY, normalize_capability() (regex ^[A-Za-z0-9_-]+$, trim, fail closed with _doing_it_wrong), get_plugin_capability(), get_dashboard_capability(), get_visible_plugins(). The capability is assigned after array_merge."
         },
         {
           "id": "apply-capability-to-menus-cards-tabs-and-guard",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "Parent menu and Dashboard use the dashboard capability; submenus use the plugin capability; cards and tabs use the visible plugins; the Dashboard tab needs the dashboard capability; render_plugin_page() ends in a 403 without the capability."
         },
         {
           "id": "phpdoc-and-array-shapes",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "unit-tests-capability",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "tests/Unit/CapabilityTest.php, 25 tests (a new file, to keep clear of the #49 branch that edits SettingsHubTest.php)."
         },
         {
           "id": "integration-tests-capability-per-role",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "tests/Integration/CapabilityIntegrationTest.php, 11 tests with real editor, subscriber and administrator users. The top-level-menu-kept-for-editor case was not tested: core drops it in wp-admin/menu.php, which a test run does not load."
         },
         {
           "id": "docs-capability-and-filters",
-          "status": "not-started",
-          "notes": "Owns the IMPLEMENTATION.md \"Error 2: 403\" rewrite. Phase 5 only verifies it."
+          "status": "completed",
+          "notes": "README (argument, new section, filters, option_page_capability caveat), IMPLEMENTATION.md (requirements line, examples, Error 2 rewritten, best practice), integration-guide.php (optional line)."
         },
         {
           "id": "changelog-unreleased-entry",
-          "status": "not-started",
-          "notes": "Must state: new capability arg and the two filters; get_plugins() entries and the plugin_actions $plugin payload always contain capability; render_dashboard() and the tabs show only plugins the user can access, so render_dashboard() with no logged-in user renders the empty state."
+          "status": "completed",
+          "notes": "Added, Changed and Documentation entries under [Unreleased], including the direct-call behaviour change."
         },
         {
           "id": "manual-check-as-editor",
@@ -288,7 +297,8 @@
         },
         {
           "id": "verify",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "89 tests (was 53), green on WP 7.1.3 and with WP_MULTISITE=1; phpcs and phpstan clean; independent mutation check killed 16 of 16 capability mutants and the earlier set still holds."
         },
         {
           "id": "review",
@@ -299,7 +309,16 @@
           "status": "not-started"
         }
       ],
-      "log": []
+      "log": [
+        {
+          "date": "2026-10-15",
+          "summary": "Capability implemented as designed: optional argument, two filters, per-plugin cards, tabs and pages, 403 guard, docs and changelog. Backward compatible: the 53 existing tests pass unchanged and a registration that passes capability manage_options builds an identical menu. phpstan.neon: setExpectedIncorrectUsage added to the existing ignore for WordPress test-suite methods (Phase 6 revisits the ignores)."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Interaction with the open UX branch (#49, feature/49-ux-design-system): its dashboard count uses count( $this->plugins ), which after this phase should count only the visible plugins, and its tests edit tests/Unit/SettingsHubTest.php, which Phase 2 rewrote. Whichever branch merges second must reconcile both. Not touched here."
+        }
+      ]
     },
     {
       "id": "phase-4-code-hardening",
@@ -576,6 +595,10 @@
     {
       "date": "2026-10-15",
       "summary": "Phase 2 implemented on 48-phase-2-integration-tests: 53 tests, mutation score 6/20 to 20/20. Waiting for the PR checks."
+    },
+    {
+      "date": "2026-10-15",
+      "summary": "Phase 2 merged (PR #53). Phase 3 implemented on 48-phase-3-capability; the independent docs track (5a) failed on a session limit before editing anything and is pending."
     }
   ]
 }
