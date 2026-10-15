@@ -94,7 +94,7 @@ The same checks are available one at a time through `./scripts/run-quality-check
 - **Type Hints**: Full type hints for all parameters, return types, and properties
 - **Indentation**: Tabs, as in the WordPress coding standards
 - **PHPCS**: The `SilverAssistWP` ruleset (see below)
-- **PHPStan**: Level 8 compliance required (`src` and `tests` are analysed)
+- **PHPStan**: Level 8 compliance required (`src` and `tests` are analysed, PHPStan 2.x). `reportUnmatchedIgnoredErrors` is on, so every entry under `ignoreErrors` in `phpstan.neon` must match an error. Fix the type instead of adding an ignore, and when an ignore is unavoidable scope it with `path` and `identifier`. The WordPress test library is not installed during analysis, so `tests/phpstan/wp-test-suite-stubs.php` stands in for `WP_UnitTestCase`, `tests_add_filter()` and the `ABSPATH` and `WP_PLUGIN_DIR` constants. Shared array shapes live in `@phpstan-type` aliases in the class docblock (`PluginData`, `PluginAction`)
 
 ### PHPCS Ruleset
 
@@ -235,7 +235,7 @@ The suite starts WordPress Playground (WordPress in WebAssembly, so Node 20+ is 
 
 `.github/workflows/ci.yml` runs on pushes to `main` and `develop`, on pull requests to `main`, and on manual dispatch. It calls the reusable `quality-checks.yml` workflow, which starts a MySQL 8.0 service, installs the WordPress Test Suite, then runs `php -l integration-guide.php`, `composer phpcs`, `composer phpstan`, the `unit` suite and the `integration` suite. The jobs are:
 
-- Quality checks on PHP 8.2 (this job also collects coverage and uploads it to Codecov without failing the build), PHP 8.3 and PHP 8.4, all against the latest WordPress
+- Quality checks on PHP 8.2 (this job also collects coverage and uploads it to Codecov without failing the build, `codecov.yml` sets the project target at 96.31% and ignores `tests/` and `vendor/`), PHP 8.3 and PHP 8.4, all against the latest WordPress
 - Quality checks on PHP 8.2 against WordPress 6.5, the oldest supported version
 - Quality checks on PHP 8.2 in WordPress multisite mode
 - A security audit job that runs `composer audit`
@@ -388,6 +388,7 @@ tests/
   Unit/                      # "unit" suite
   Integration/               # "integration" suite
   e2e/                       # Playwright design system tests and the fixture plugin
+  phpstan/                   # PHPStan stubs for the WordPress test library (never loaded by PHPUnit)
 package.json                 # End-to-end tooling only (Playwright, WordPress Playground)
 playwright.config.ts         # Playwright configuration
 scripts/

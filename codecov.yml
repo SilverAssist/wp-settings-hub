@@ -1,0 +1,20 @@
+# Codecov configuration.
+#
+# Project target: 98.31% (Codecov total for main after Phase 4 of #48, commit 1b4dac9) minus 2 points.
+# Raise it only when coverage has risen and stays there.
+coverage:
+  status:
+    project:
+      default:
+        target: 96.31%
+        # No allowed drop below the target, the 2 point margin is already in it.
+        threshold: 0%
+    patch:
+      default:
+        # Reported on the pull request but never blocking, a small patch can swing a lot.
+        informational: true
+
+ignore:
+  - "tests/"
+  - "vendor/"
+  - "coverage/"
