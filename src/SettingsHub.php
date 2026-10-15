@@ -481,6 +481,19 @@ final class SettingsHub {
 
 			<p class="silverassist-dashboard-description">
 				<?php esc_html_e( 'Welcome to Silver Assist! Below are all your installed Silver Assist plugins.', 'silverassist-settings-hub' ); ?>
+				<?php if ( ! empty( $this->plugins ) ) : ?>
+					<span class="silverassist-dashboard-count">
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: %d: number of registered Silver Assist plugins. */
+								_n( '%d plugin', '%d plugins', count( $this->plugins ), 'silverassist-settings-hub' ),
+								count( $this->plugins )
+							)
+						);
+						?>
+					</span>
+				<?php endif; ?>
 			</p>
 
 			<?php if ( empty( $plugins ) ) : ?>
@@ -488,6 +501,9 @@ final class SettingsHub {
 					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
 					<p>
 						<?php esc_html_e( 'No Silver Assist plugins have been registered yet.', 'silverassist-settings-hub' ); ?>
+					</p>
+					<p class="silverassist-empty-state-hint">
+						<?php esc_html_e( 'Activate a Silver Assist plugin and it will show up here automatically.', 'silverassist-settings-hub' ); ?>
 					</p>
 				</div>
 			<?php else : ?>
@@ -523,10 +539,11 @@ final class SettingsHub {
 		$name         = (string) $plugin['name'];
 		$description  = $plugin['description'] ?? '';
 		$version      = $plugin['version'] ?? '';
+		$heading_id   = 'silverassist-card-' . sanitize_key( $slug ) . '-title';
 		?>
-		<div class="silverassist-plugin-card">
+		<article class="silverassist-plugin-card" aria-labelledby="<?php echo esc_attr( $heading_id ); ?>">
 			<div class="card-header">
-				<h2>
+				<h2 id="<?php echo esc_attr( $heading_id ); ?>">
 					<span class="dashicons dashicons-admin-plugins" aria-hidden="true"></span>
 					<?php echo esc_html( $name ); ?>
 				</h2>
@@ -570,7 +587,7 @@ final class SettingsHub {
 					?>
 				</div>
 			</div>
-		</div>
+		</article>
 		<?php
 	}
 
@@ -680,9 +697,9 @@ final class SettingsHub {
 		// The Dashboard needs its own capability; for anyone else the tab would be a dead link.
 		$show_dashboard = current_user_can( $this->get_dashboard_capability() );
 		?>
-		<nav class="nav-tab-wrapper silverassist-hub-tabs">
+		<nav class="nav-tab-wrapper silverassist-hub-tabs" aria-label="<?php esc_attr_e( 'Silver Assist', 'silverassist-settings-hub' ); ?>">
 			<?php if ( $show_dashboard ) : ?>
-				<a href="<?php echo esc_url( $dashboard_url ); ?>" class="nav-tab <?php echo $is_dashboard_active ? 'nav-tab-active' : ''; ?>">
+				<a href="<?php echo esc_url( $dashboard_url ); ?>" class="nav-tab <?php echo $is_dashboard_active ? 'nav-tab-active' : ''; ?>"<?php echo $is_dashboard_active ? ' aria-current="page"' : ''; ?>>
 					<?php esc_html_e( 'Dashboard', 'silverassist-settings-hub' ); ?>
 				</a>
 			<?php endif; ?>
@@ -693,7 +710,7 @@ final class SettingsHub {
 				$is_active = $plugin['slug'] === $active_slug;
 				$tab_title = $plugin['tab_title'] ?? $plugin['name'];
 				?>
-				<a href="<?php echo esc_url( $tab_url ); ?>" class="nav-tab <?php echo $is_active ? 'nav-tab-active' : ''; ?>">
+				<a href="<?php echo esc_url( $tab_url ); ?>" class="nav-tab <?php echo $is_active ? 'nav-tab-active' : ''; ?>"<?php echo $is_active ? ' aria-current="page"' : ''; ?>>
 					<?php echo esc_html( $tab_title ); ?>
 				</a>
 			<?php endforeach; ?>

@@ -9,14 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Design system documented in `docs/design-system.md`: tokens, component rules, contrast ratios, accessibility rules and a guide for consumer plugins ([#49](https://github.com/SilverAssist/wp-settings-hub/issues/49)).
+- Playwright suite (`npm run test:e2e`) that runs the dashboard, a plugin page and the empty state in a real wp-admin (WordPress Playground) and checks them against the design system: documented tokens and classes against the CSS, the radius vocabulary, borders and shadows, keyboard focus, reduced motion, the 360px layout and axe (WCAG 2 A and AA).
+- `E2E (design system)` workflow, and an npm entry in Dependabot for the test tooling.
+- `aria-label` on the tabs navigation and `aria-current="page"` on the active tab.
+- Plugin count on the dashboard, and a hint in the empty state that says how plugins appear.
+- New design tokens (`--silver-hub-navy`, `--silver-hub-teal`, `--silver-hub-space-*`, `--silver-hub-text-*`, `--silver-hub-radius-input|button|card|pill` and others, see the design system).
 - Optional `capability` argument for `register_plugin()`, `manage_options` by default. It decides who gets the plugin's submenu item, dashboard card, tab and page. An invalid value falls back to `manage_options` and is reported with `_doing_it_wrong()`.
 - Filters `silverassist_settings_hub_plugin_capability` and `silverassist_settings_hub_dashboard_capability`.
 
 ### Changed
 
+- Redesigned the dashboard, tabs and page header with a border-first monochrome style: bordered cards with an icon tile and no lift on hover, pill tabs with a soft-blue active state, a brand-teal (`#2d8ab3`) focus ring, one brand-navy (`#003073`) primary action per card and a neutral monospace version pill.
+- Plugin cards render as `<article>` elements labelled by their title. CSS classes are unchanged.
+- The pre-1.3 CSS custom properties (`--silver-hub-color-*`, `--silver-hub-spacing-*`, `--silver-hub-font-size-*` and friends) are now aliases of the new tokens. `--silver-hub-color-primary` is now the brand navy `#003073` instead of `#0073aa`.
+- Tabs scroll horizontally on one line below 782px instead of wrapping. Card action buttons are 40px high there.
 - `get_plugins()` entries and the `silverassist_settings_hub_plugin_actions` `$plugin` payload now always contain `capability`.
 - The dashboard cards and the tabs show only the plugins the current user can open, and the Dashboard tab is hidden for users without the dashboard capability. Calling `render_dashboard()` with no logged-in user now renders the empty state.
 - A plugin page stops with a 403 when it is rendered for a user who lacks the plugin's capability.
+
+### Fixed
+
+- The version badge used green text on mint (3.00:1), below WCAG AA. It is now a neutral pill.
+- Removed a container query that targeted its own container and never matched. The grid now collapses with `minmax(min(100%, 300px), 1fr)`.
+- Added a visible keyboard focus ring and `prefers-reduced-motion` support.
 
 ### Documentation
 

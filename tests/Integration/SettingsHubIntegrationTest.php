@@ -276,7 +276,7 @@ class SettingsHubIntegrationTest extends TestCase {
 		$this->assertStringContainsString( 'bare-body', $page );
 		$this->assertCount( 0, $this->nodes( $xpath, '//span[' . $this->has_class( 'version-badge' ) . ']' ), 'No version badge without a version' );
 
-		$cards = $this->nodes( $this->xpath( $this->render_registered_page( 'silver-assist' ) ), '//div[' . $this->has_class( 'silverassist-plugin-card' ) . ']' );
+		$cards = $this->nodes( $this->xpath( $this->render_registered_page( 'silver-assist' ) ), '//article[' . $this->has_class( 'silverassist-plugin-card' ) . ']' );
 		$this->assertCount( 1, $cards, 'The dashboard should still list the plugin' );
 		$this->assertCount( 0, $this->nodes( $this->xpath( (string) $cards[0]->ownerDocument?->saveHTML( $cards[0] ) ), '//span[' . $this->has_class( 'silverassist-version-badge' ) . ']' ), 'No version badge on the card' );
 	}
@@ -319,7 +319,7 @@ class SettingsHubIntegrationTest extends TestCase {
 		$this->fire_admin_menu();
 
 		$xpath = $this->xpath( $this->render_registered_page( 'silver-assist' ) );
-		$cards = $this->nodes( $xpath, '//div[' . $this->has_class( 'silverassist-plugin-card' ) . ']' );
+		$cards = $this->nodes( $xpath, '//article[' . $this->has_class( 'silverassist-plugin-card' ) . ']' );
 
 		$this->assertCount( 2, $cards, 'One card per registered plugin' );
 

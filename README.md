@@ -13,7 +13,7 @@ Centralized settings hub for Silver Assist WordPress plugins. Provides a unified
 - **🎯 Auto-Registration**: Plugins register themselves without central configuration
 - **📊 Dynamic Dashboard**: Automatically generates overview of all installed Silver Assist plugins
 - **🔗 Cross-Plugin Navigation**: Optional tabs for seamless navigation between plugin settings
-- **🎨 Beautiful UI**: WordPress-native design with cards and tabs
+- **🎨 Beautiful UI**: Border-first, accessible design with cards and pill tabs, documented in the [design system](docs/design-system.md)
 - **🏢 Top-Level Menu**: Professional menu structure with custom icon and submenus
 - **🔒 Type-Safe**: Full PHP 8.2+ type hints and PHPDocs
 - **✅ Tested**: PHPUnit 9.6 tests that run against the WordPress Test Suite
@@ -511,7 +511,7 @@ Get the parent menu slug.
 
 ## Development
 
-Setup, running the tests, the quality checks, the commit convention and the release checklist are documented in [CONTRIBUTING.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md).
+Setup, running the tests, the quality checks, the commit convention and the release checklist are documented in [CONTRIBUTING.md](https://github.com/SilverAssist/wp-settings-hub/blob/main/CONTRIBUTING.md). UI changes follow the [design system](docs/design-system.md), which a Playwright suite checks against the stylesheet.
 
 ## Architecture
 

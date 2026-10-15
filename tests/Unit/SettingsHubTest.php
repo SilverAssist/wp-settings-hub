@@ -207,6 +207,100 @@ final class SettingsHubTest extends TestCase {
 	}
 
 	/**
+	 * Render the dashboard with the given plugin slugs registered and return the HTML.
+	 *
+	 * @param array<int, string> $slugs Plugin slugs to register.
+	 * @return string Dashboard HTML.
+	 */
+	private function render_dashboard_with( array $slugs ): string {
+		$hub = SettingsHub::get_instance();
+		$hub->enable_tabs( true );
+
+		foreach ( $slugs as $slug ) {
+			$hub->register_plugin(
+				$slug,
+				'Plugin ' . $slug,
+				static function (): void {
+					echo 'Settings';
+				}
+			);
+		}
+
+		ob_start();
+		$hub->render_dashboard();
+		$output = (string) ob_get_clean();
+
+		return $output;
+	}
+
+	/**
+	 * Test the tabs navigation is a labelled landmark and only the dashboard tab is current.
+	 */
+	public function test_tabs_navigation_is_labelled_and_marks_current_tab(): void {
+		$output = $this->render_dashboard_with( array( 'alpha', 'beta' ) );
+
+		$this->assertMatchesRegularExpression(
+			'/<nav[^>]*class="[^"]*silverassist-hub-tabs[^"]*"[^>]*\saria-label="[^"]+"/',
+			$output,
+			'Tabs navigation should have an aria-label'
+		);
+		$this->assertSame( 1, substr_count( $output, 'aria-current="page"' ), 'Exactly one tab should be current' );
+		$this->assertMatchesRegularExpression(
+			'/class="nav-tab nav-tab-active"[^>]*aria-current="page"/',
+			$output,
+			'The active tab should carry aria-current'
+		);
+	}
+
+	/**
+	 * Test each card is an article labelled by its own heading.
+	 */
+	public function test_plugin_cards_are_labelled_articles(): void {
+		$output = $this->render_dashboard_with( array( 'alpha', 'beta' ) );
+
+		$this->assertSame( 2, substr_count( $output, '<article class="silverassist-plugin-card"' ), 'Each plugin should render one article card' );
+		$this->assertSame( 2, substr_count( $output, '</article>' ), 'Articles should be closed' );
+
+		foreach ( array( 'alpha', 'beta' ) as $slug ) {
+			$id = 'silverassist-card-' . $slug . '-title';
+			$this->assertStringContainsString( 'aria-labelledby="' . $id . '"', $output, "Card {$slug} should reference its heading" );
+			$this->assertStringContainsString( '<h2 id="' . $id . '">', $output, "Card {$slug} heading should carry the id" );
+		}
+	}
+
+	/**
+	 * Test the dashboard shows a singular or plural plugin count.
+	 */
+	public function test_dashboard_shows_plugin_count(): void {
+		$one = $this->render_dashboard_with( array( 'alpha' ) );
+		$this->assertMatchesRegularExpression( '/silverassist-dashboard-count">\s*1 plugin\s*</', $one, 'Should use the singular form' );
+
+		SettingsHub::get_instance()->register_plugin(
+			'beta',
+			'Plugin beta',
+			static function (): void {
+				echo 'Settings';
+			}
+		);
+
+		ob_start();
+		SettingsHub::get_instance()->render_dashboard();
+		$two = (string) ob_get_clean();
+		$this->assertMatchesRegularExpression( '/silverassist-dashboard-count">\s*2 plugins\s*</', $two, 'Should use the plural form' );
+	}
+
+	/**
+	 * Test the empty state tells the user what to do and shows no count.
+	 */
+	public function test_empty_state_has_guidance_and_no_count(): void {
+		$output = $this->render_dashboard_with( array() );
+
+		$this->assertStringContainsString( 'silverassist-empty-state-hint', $output, 'Empty state should include a hint' );
+		$this->assertStringNotContainsString( 'silverassist-dashboard-count', $output, 'Empty state should not show a count' );
+		$this->assertStringNotContainsString( 'silverassist-dashboard-grid', $output, 'Empty state should not render the grid' );
+	}
+
+	/**
 	 * Test tabs are not rendered when disabled.
 	 */
 	public function test_render_dashboard_without_tabs(): void {

@@ -213,6 +213,18 @@ composer test:coverage
 
 To run the suite in WordPress multisite mode, set `WP_MULTISITE=1`, as the CI multisite job does.
 
+### Design System Tests
+
+Changes to `assets/css/settings-hub.css` or to the markup in `src/SettingsHub.php` must follow [`docs/design-system.md`](docs/design-system.md). Update the token tables in the same commit as the CSS, then run:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+The suite starts WordPress Playground (WordPress in WebAssembly, so Node 20+ is all it needs) with the fixture plugin in `tests/e2e/fixtures/settings-hub-e2e/`. It fails when a documented token or class is missing from the CSS or has a different value, and it also checks the radius vocabulary, keyboard focus, reduced motion, the 360px layout and accessibility with axe.
+
 ### Test Coverage
 
 - All new features must include tests
@@ -227,6 +239,7 @@ To run the suite in WordPress multisite mode, set `WP_MULTISITE=1`, as the CI mu
 - Quality checks on PHP 8.2 against WordPress 6.5, the oldest supported version
 - Quality checks on PHP 8.2 in WordPress multisite mode
 - A security audit job that runs `composer audit`
+- `.github/workflows/e2e.yml` runs the design system Playwright suite on the same triggers
 
 `auto-merge-dependabot.yml` handles Dependabot updates. Releases are covered in [Release Process](#release-process).
 
@@ -368,16 +381,20 @@ For new features:
 ```text
 src/                         # Source code (SettingsHub.php)
 assets/css/                  # settings-hub.css, the stylesheet the hub loads
+docs/design-system.md        # Design system: tokens, components, accessibility rules
 tests/
   bootstrap.php              # Boots the WordPress Test Suite (exits if it is missing)
   TestCase.php               # Base class for every test (extends WP_UnitTestCase)
   Unit/                      # "unit" suite
   Integration/               # "integration" suite
+  e2e/                       # Playwright design system tests and the fixture plugin
+package.json                 # End-to-end tooling only (Playwright, WordPress Playground)
+playwright.config.ts         # Playwright configuration
 scripts/
   install-wp-tests.sh        # Installs the WordPress Test Suite (wrapper over wp-coding-standards)
   run-quality-checks.sh      # Runs PHPCS, PHPStan and PHPUnit
 .githooks/commit-msg         # Strips AI attribution trailers from commit messages
-.github/workflows/           # ci.yml, quality-checks.yml, release.yml, auto-merge-dependabot.yml
+.github/workflows/           # ci.yml, quality-checks.yml, e2e.yml, release.yml, auto-merge-dependabot.yml
 README.md                    # Usage and API reference
 IMPLEMENTATION.md            # Integration guide for plugin authors
 integration-guide.php        # Example plugin integration (excluded from PHPCS)

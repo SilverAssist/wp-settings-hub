@@ -1,0 +1,10 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/admin.php?page=silver-assist",
+  "steps": [
+    {
+      "step": "activatePlugin",
+      "pluginPath": "settings-hub-e2e/settings-hub-e2e.php"
+    }
+  ]
+}
