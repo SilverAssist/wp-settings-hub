@@ -241,7 +241,7 @@ The suite starts WordPress Playground (WordPress in WebAssembly, so Node 20+ is 
 - A security audit job that runs `composer audit`
 - `.github/workflows/e2e.yml` runs the design system Playwright suite on the same triggers
 
-`auto-merge-dependabot.yml` handles Dependabot updates. Releases are covered in [Release Process](#release-process).
+`auto-merge-dependabot.yml` handles Dependabot updates by calling the shared `SilverAssist/workflows/dependabot-auto-merge@v1` action. Releases are covered in [Release Process](#release-process).
 
 ## Pull Request Process
 

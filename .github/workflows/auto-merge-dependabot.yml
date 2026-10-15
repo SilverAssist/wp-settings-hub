@@ -1,72 +1,35 @@
+# Calls the shared action in SilverAssist/workflows (dependabot-auto-merge@v1).
+#
+# The logic lives in SilverAssist/workflows. This file only decides when it
+# runs and what the token may do. The job-level `if:` keeps a write-scoped
+# token away from other contributors' pull requests; the action then refuses
+# anything that is not a Dependabot pull request event, and anything whose
+# head moved or carries a commit that is not a verified Dependabot commit.
+#
+# Requirements in this repo (the SilverAssist/workflows README explains why):
+# - "Allow auto-merge" on.
+# - "Allow GitHub Actions to create and approve pull requests" on.
+# - Required status checks on the default branch, in the main-protection ruleset.
+# - Stale approvals dismissed on push in the branch ruleset.
 name: Auto-merge Dependabot PRs
 
-on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+on: pull_request
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
+
+# A newer push to the same pull request supersedes the run for the older one.
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  auto-merge:
+  dependabot-auto-merge:
     runs-on: ubuntu-latest
-    if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request'
-
+    if: github.actor == 'dependabot[bot]'
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
-      - name: Get PR details
-        id: pr-details
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          script: |
-            const { data: pullRequests } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.payload.workflow_run.head_sha,
-            });
-
-            if (pullRequests.length === 0) {
-              console.log('No PR found for this commit');
-              return null;
-            }
-
-            const pr = pullRequests[0];
-            console.log(`Found PR #${pr.number} by ${pr.user.login}`);
-
-            return {
-              number: pr.number,
-              user: pr.user.login,
-              mergeable_state: pr.mergeable_state
-            };
-
-      - name: Auto-merge Dependabot PRs
-        if: fromJSON(steps.pr-details.outputs.result).user == 'dependabot[bot]'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          script: |
-            const prNumber = ${{ fromJSON(steps.pr-details.outputs.result).number }};
-
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
-
-            console.log(`PR #${prNumber} mergeable_state: ${pr.mergeable_state}`);
-
-            if (pr.mergeable_state === 'clean') {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-                merge_method: 'squash',
-                commit_title: pr.title,
-                commit_message: `${pr.title}\n\n${pr.body || ''}`
-              });
-              console.log(`Successfully merged PR #${prNumber}`);
-            } else {
-              console.log(`PR #${prNumber} not ready for merge. State: ${pr.mergeable_state}`);
-            }
+      - uses: SilverAssist/workflows/dependabot-auto-merge@v1

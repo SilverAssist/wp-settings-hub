@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Dependabot auto-merge workflow is now a thin caller of the shared `SilverAssist/workflows/dependabot-auto-merge@v1` action. The cooldown and approval logic moved there, and the action also refuses pull requests carrying commits that are not verified Dependabot commits.
 - Registering a plugin from an `admin_menu` callback after the hub's priority 5 pass now works: the submenu is added immediately. Registering after `admin_menu` has finished is reported with `_doing_it_wrong()`. Registering before or during `admin_menu` is unchanged.
 - The menu registration is idempotent: firing `admin_menu` again no longer duplicates the submenu rows.
 - A callback action's JavaScript now runs in a click handler that receives `event` (`function(event) {...}`), and the button ids are unique within a dashboard page (a repeated id gets a numeric suffix, for example labels "Run Now" and "RunNow").
