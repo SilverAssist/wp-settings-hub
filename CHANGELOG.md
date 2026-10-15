@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Registering a plugin from an `admin_menu` callback after the hub's priority 5 pass now works: the submenu is added immediately. Registering after `admin_menu` has finished is reported with `_doing_it_wrong()`. Registering before or during `admin_menu` is unchanged.
+- The menu registration is idempotent: firing `admin_menu` again no longer duplicates the submenu rows.
+- A callback action's JavaScript now runs in a click handler that receives `event` (`function(event) {...}`), and the button ids are unique within a dashboard page (a repeated id gets a numeric suffix, for example labels "Run Now" and "RunNow").
+- Unserializing the hub now throws a `LogicException` instead of silently producing a second instance.
+- `PACKAGE_VERSION` (the stylesheet `ver` for cache busting) is `1.2.2`; it was left at `1.2.0`, so browsers kept the stylesheet cached through the 1.2.1 and 1.2.2 releases. A test now fails when it drifts from the newest released CHANGELOG heading.
 - Redesigned the dashboard, tabs and page header with a border-first monochrome style: bordered cards with an icon tile and no lift on hover, pill tabs with a soft-blue active state, a brand-teal (`#2d8ab3`) focus ring, one brand-navy (`#003073`) primary action per card and a neutral monospace version pill.
 - Plugin cards render as `<article>` elements labelled by their title. CSS classes are unchanged.
 - The pre-1.3 CSS custom properties (`--silver-hub-color-*`, `--silver-hub-spacing-*`, `--silver-hub-font-size-*` and friends) are now aliases of the new tokens. `--silver-hub-color-primary` is now the brand navy `#003073` instead of `#0073aa`.
@@ -30,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The stylesheet loaded on any admin page whose hook suffix merely contained `silver-assist`, such as `settings_page_silver-assist-security`. It now loads on `toplevel_page_silver-assist` and on `{prefix}_page_*`, where the prefix is the one WordPress derived from the (possibly translated) parent menu title.
+- The dashboard plugin count included plugins the current user cannot open, so it disagreed with the cards shown.
 - The version badge used green text on mint (3.00:1), below WCAG AA. It is now a neutral pill.
 - Removed a container query that targeted its own container and never matched. The grid now collapses with `minmax(min(100%, 300px), 1fr)`.
 - Added a visible keyboard focus ring and `prefers-reduced-motion` support.

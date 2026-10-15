@@ -281,6 +281,24 @@ final class CapabilityTest extends TestCase {
 	}
 
 	/**
+	 * The plugin count on the dashboard counts the cards the user sees, not every registration.
+	 *
+	 * @return void
+	 */
+	public function test_dashboard_count_matches_the_visible_cards(): void {
+		$this->register( 'admin-only' );
+		$this->register( 'another-admin-only' );
+		$this->register( 'for-editors', array( 'capability' => 'edit_posts' ) );
+
+		$this->login_as( 'editor' );
+		$as_editor = $this->dashboard();
+		$this->assertMatchesRegularExpression( '/silverassist-dashboard-count">\s*1 plugin\s*</', $as_editor );
+
+		$this->login_as( 'administrator' );
+		$this->assertMatchesRegularExpression( '/silverassist-dashboard-count">\s*3 plugins\s*</', $this->dashboard() );
+	}
+
+	/**
 	 * A custom capability does not widen access for an administrator who lacks it.
 	 *
 	 * @return void

@@ -233,9 +233,9 @@ Based on real-world implementations, these are the **most common errors** and th
 
 **Symptom**: Plugin registers successfully but doesn't appear in "Silver Assist" menu.
 
-**Cause**: Plugin registers at default priority (10), same as or after Settings Hub (priority 5), causing race condition.
+**Cause**: Plugin registers too late. Up to hub 1.2.x a registration after the hub's own `admin_menu` priority 5 pass (for example at the default priority 10) left the plugin without a submenu. From 1.3.0 a registration made while `admin_menu` is running gets its submenu immediately, so this symptom now means the plugin registers after `admin_menu` has finished (for example on `admin_init`), which is reported with `_doing_it_wrong()`, or that the user lacks the plugin's `capability`.
 
-**Solution**: Use priority **4** for `admin_menu` hook.
+**Solution**: Register on or before `admin_menu`. Priority **4** is still the safest choice, and the only one that works with hub versions before 1.3.0.
 
 ```php
 // ❌ WRONG - Default priority (10)
@@ -245,7 +245,7 @@ add_action( 'admin_menu', [ $this, 'register_with_hub' ] );
 add_action( 'admin_menu', [ $this, 'register_with_hub' ], 4 );
 ```
 
-**Why this happens**: WordPress executes hooks in priority order. If your plugin registers at priority 10, Settings Hub has already created its menu at priority 5, and your submenu registration fails.
+**Why this happens**: WordPress executes hooks in priority order. With hub versions before 1.3.0, a plugin registering at priority 10 came after the hub had already built its menu at priority 5, so no submenu was added.
 
 ---
 

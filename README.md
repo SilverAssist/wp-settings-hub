@@ -427,7 +427,7 @@ Register a plugin with the settings hub.
 Each action in the `actions` array should be an associative array with:
 - `label` (string, required): Button text
 - `url` (string, optional): Direct link URL (for navigation)
-- `callback` (callable, optional): JavaScript code to execute (for interactive actions)
+- `callback` (callable, optional): prints JavaScript for an interactive action. The callback runs while the dashboard renders, and the JavaScript it prints becomes the body of the button's click handler, where `event` is the click event. It receives the plugin slug. Button ids are `sa-action-{slug}-{label}` and get a numeric suffix when they repeat on the page
 - `class` (string, optional): CSS classes for the button (default: `'button'`)
 
 **Example with Actions**:
@@ -529,7 +529,7 @@ Plugins register themselves by calling `register_plugin()`. The hub automaticall
 
 ### Hooks
 
-The hub uses WordPress's `admin_menu` hook with priority 5 to register menus early. This ensures the parent menu exists before any submenus are registered.
+The hub uses WordPress's `admin_menu` hook with priority 5 to register menus early. This ensures the parent menu exists before any submenus are registered. A plugin that calls `register_plugin()` later while `admin_menu` is still running gets its submenu immediately, and a call after `admin_menu` has finished is reported with `_doing_it_wrong()`. Firing `admin_menu` more than once never duplicates a menu row.
 
 ## License
 
