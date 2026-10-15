@@ -45,8 +45,8 @@
       "id": "phase-1-ci-tooling",
       "title": "Phase 1: CI and tooling",
       "kind": "phase",
-      "status": "not-started",
-      "notes": "Branch: 48-settings-hub-hardening (already created and linked to #48; carries this plan). Make CI fail on what it claims to check, test the supported WordPress range, and block releases with a stale PACKAGE_VERSION.",
+      "status": "in-progress",
+      "notes": "Branch: 48-settings-hub-hardening (already created and linked to #48; carries this plan). Make CI fail on what it claims to check, test the supported WordPress range, and block releases with a stale PACKAGE_VERSION. Known limitation: on a manual release dispatch the reusable quality-checks job still checks out the dispatching ref, not the tag; only validate and build use the tag.",
       "findings": [
         "quality-checks.yml runs `composer phpcbf || true` before `composer phpcs`, so fixable style violations never fail CI.",
         "integration-guide.php fails `php -l` (unexpected token \"public\" on line 475): a nested docblock at :456-473 closes the outer /* */ opened at :387. It is excluded from PHPCS and PHPStan, so nothing catches it.",
@@ -57,23 +57,69 @@
         "phpunit.xml hardcodes WP_TESTS_DIR=/tmp/wordpress-tests-lib while the install script uses $TMPDIR (/var/folders/... on macOS); WP_TESTS_PHPUNIT_POLYFILLS_PATH is relative; bootstrap hint says password 'root' and host localhost."
       ],
       "tasks": [
-        { "id": "branch", "status": "completed", "notes": "48-settings-hub-hardening created with gh issue develop 48." },
-        { "id": "ci-remove-phpcbf-autofix", "status": "not-started" },
-        { "id": "fix-integration-guide-parse-error-and-lint", "status": "not-started" },
-        { "id": "ci-mysql-service-container", "status": "not-started" },
-        { "id": "ci-wp-matrix-and-multisite-job", "status": "not-started", "notes": "WP 6.5 x PHP 8.2; WP latest x PHP 8.2/8.3/8.4; one WP_MULTISITE=1 job on latest." },
-        { "id": "ci-split-unit-and-integration-steps", "status": "not-started" },
-        { "id": "ci-fix-action-pins", "status": "not-started" },
-        { "id": "release-validate-package-version-and-dispatch", "status": "not-started" },
-        { "id": "local-setup-shared-install-script-and-phpunit-config", "status": "not-started" },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started" },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "completed",
+          "notes": "48-settings-hub-hardening created with gh issue develop 48."
+        },
+        {
+          "id": "ci-remove-phpcbf-autofix",
+          "status": "completed"
+        },
+        {
+          "id": "fix-integration-guide-parse-error-and-lint",
+          "status": "completed"
+        },
+        {
+          "id": "ci-mysql-service-container",
+          "status": "completed"
+        },
+        {
+          "id": "ci-wp-matrix-and-multisite-job",
+          "status": "completed",
+          "notes": "WP 6.5 x PHP 8.2; WP latest x PHP 8.2/8.3/8.4; one WP_MULTISITE=1 job on latest."
+        },
+        {
+          "id": "ci-split-unit-and-integration-steps",
+          "status": "completed"
+        },
+        {
+          "id": "ci-fix-action-pins",
+          "status": "completed"
+        },
+        {
+          "id": "release-validate-package-version-and-dispatch",
+          "status": "completed"
+        },
+        {
+          "id": "local-setup-shared-install-script-and-phpunit-config",
+          "status": "completed"
+        },
+        {
+          "id": "verify",
+          "status": "completed"
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": [
         {
           "date": "2026-10-14",
           "summary": "Issue #48 opened and branch 48-settings-hub-hardening created and linked. Baseline verified against a real WordPress 7.1.3 test install: unit 16/16, integration 8/8, all 24/24 (86 assertions); also 24/24 with WP_MULTISITE=1. phpcs and phpstan pass; composer audit clean."
+        },
+        {
+          "date": "2026-10-14",
+          "summary": "Phase 1 implemented. quality-checks.yml: removed `composer phpcbf || true`, mysql:8.0 service container on 127.0.0.1, new wordpress-version and multisite inputs, php -l integration-guide.php, unit and integration run as separate steps, coverage collected only on the coverage job. ci.yml: added WP 6.5 and multisite jobs. release.yml: PACKAGE_VERSION must equal the tag, manual runs use the tag input (checkout ref, VERSION, tag_name). Pins: checkout comments corrected to v7.0.1, github-script pinned to its v9 SHA. integration-guide.php: nested docblock turned into // comments (php -l passes). scripts/install-wp-tests.sh is now a wrapper over the shared script; phpunit.xml no longer hardcodes WP_TESTS_DIR or the relative polyfills path (bootstrap defines the absolute path); bootstrap hint updated."
+        },
+        {
+          "date": "2026-10-14",
+          "summary": "Verified locally: unit 16/16 and integration 8/8 on WP 7.1.3 and on WP 6.5, 24/24 with WP_MULTISITE=1, run with no WP_TESTS_DIR set and from another working directory; phpcs and phpstan clean. The wrapper install into a clean TMPDIR created the suite and database on the first run. Not verifiable locally: the new workflow jobs themselves, which run on the PR."
         }
       ]
     },
@@ -91,17 +137,51 @@
         "Coverage cannot be measured locally (no xdebug/pcov on the dev machine); CI has xdebug and uploads to Codecov with fail_ci_if_error: false and no threshold."
       ],
       "tasks": [
-        { "id": "branch", "status": "not-started" },
-        { "id": "shared-testcase-resets-and-helpers", "status": "not-started" },
-        { "id": "unit-setup-logs-in-administrator", "status": "not-started" },
-        { "id": "remove-fake-integration-tests", "status": "not-started" },
-        { "id": "add-characterisation-integration-tests", "status": "not-started" },
-        { "id": "dedupe-render-tests-between-suites", "status": "not-started" },
-        { "id": "optional-port-run-phpunit-complete", "status": "not-started" },
-        { "id": "record-coverage-baseline", "status": "not-started", "notes": "Store the CI coverage percentage in this work item's log; Phase 2 or later sets the gate at baseline minus 2 points." },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started" },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "not-started"
+        },
+        {
+          "id": "shared-testcase-resets-and-helpers",
+          "status": "not-started"
+        },
+        {
+          "id": "unit-setup-logs-in-administrator",
+          "status": "not-started"
+        },
+        {
+          "id": "remove-fake-integration-tests",
+          "status": "not-started"
+        },
+        {
+          "id": "add-characterisation-integration-tests",
+          "status": "not-started"
+        },
+        {
+          "id": "dedupe-render-tests-between-suites",
+          "status": "not-started"
+        },
+        {
+          "id": "optional-port-run-phpunit-complete",
+          "status": "not-started"
+        },
+        {
+          "id": "record-coverage-baseline",
+          "status": "not-started",
+          "notes": "Store the CI coverage percentage in this work item's log; Phase 2 or later sets the gate at baseline minus 2 points."
+        },
+        {
+          "id": "verify",
+          "status": "not-started"
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": []
     },
@@ -120,18 +200,54 @@
         "Existing unit render tests run as user 0 and will fail once cards are filtered per user; Phase 2 logs in an administrator first."
       ],
       "tasks": [
-        { "id": "branch", "status": "not-started" },
-        { "id": "capability-helpers-and-constant", "status": "not-started" },
-        { "id": "apply-capability-to-menus-cards-tabs-and-guard", "status": "not-started" },
-        { "id": "phpdoc-and-array-shapes", "status": "not-started" },
-        { "id": "unit-tests-capability", "status": "not-started" },
-        { "id": "integration-tests-capability-per-role", "status": "not-started" },
-        { "id": "docs-capability-and-filters", "status": "not-started" },
-        { "id": "changelog-unreleased-entry", "status": "not-started" },
-        { "id": "manual-check-as-editor", "status": "not-started" },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started" },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "not-started"
+        },
+        {
+          "id": "capability-helpers-and-constant",
+          "status": "not-started"
+        },
+        {
+          "id": "apply-capability-to-menus-cards-tabs-and-guard",
+          "status": "not-started"
+        },
+        {
+          "id": "phpdoc-and-array-shapes",
+          "status": "not-started"
+        },
+        {
+          "id": "unit-tests-capability",
+          "status": "not-started"
+        },
+        {
+          "id": "integration-tests-capability-per-role",
+          "status": "not-started"
+        },
+        {
+          "id": "docs-capability-and-filters",
+          "status": "not-started"
+        },
+        {
+          "id": "changelog-unreleased-entry",
+          "status": "not-started"
+        },
+        {
+          "id": "manual-check-as-editor",
+          "status": "not-started"
+        },
+        {
+          "id": "verify",
+          "status": "not-started"
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": []
     },
@@ -150,17 +266,50 @@
         "assets/css/settings-hub.css:299-303 queries the container element itself (@container on .silverassist-dashboard-grid), which can never match."
       ],
       "tasks": [
-        { "id": "branch", "status": "not-started" },
-        { "id": "idempotent-and-late-registration", "status": "not-started" },
-        { "id": "exact-hook-suffix-match", "status": "not-started" },
-        { "id": "wakeup-throws", "status": "not-started" },
-        { "id": "action-button-contract", "status": "not-started" },
-        { "id": "package-version-bump-and-sync-test", "status": "not-started" },
-        { "id": "css-container-query", "status": "not-started" },
-        { "id": "changelog-unreleased-entry", "status": "not-started" },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started" },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "not-started"
+        },
+        {
+          "id": "idempotent-and-late-registration",
+          "status": "not-started"
+        },
+        {
+          "id": "exact-hook-suffix-match",
+          "status": "not-started"
+        },
+        {
+          "id": "wakeup-throws",
+          "status": "not-started"
+        },
+        {
+          "id": "action-button-contract",
+          "status": "not-started"
+        },
+        {
+          "id": "package-version-bump-and-sync-test",
+          "status": "not-started"
+        },
+        {
+          "id": "css-container-query",
+          "status": "not-started"
+        },
+        {
+          "id": "changelog-unreleased-entry",
+          "status": "not-started"
+        },
+        {
+          "id": "verify",
+          "status": "not-started"
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": []
     },
@@ -181,17 +330,51 @@
         "IMPLEMENTATION.md:351 describes onclick attributes; the code uses an addEventListener <script> block."
       ],
       "tasks": [
-        { "id": "branch", "status": "not-started" },
-        { "id": "readme", "status": "not-started" },
-        { "id": "implementation-md", "status": "not-started" },
-        { "id": "contributing-md", "status": "not-started" },
-        { "id": "copilot-instructions-pointer-file", "status": "not-started" },
-        { "id": "integration-guide-example", "status": "not-started" },
-        { "id": "composer-description-and-slevomat", "status": "not-started" },
-        { "id": "text-domain-wording", "status": "not-started" },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started", "notes": "Use --budget thorough for this phase." },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "not-started"
+        },
+        {
+          "id": "readme",
+          "status": "not-started"
+        },
+        {
+          "id": "implementation-md",
+          "status": "not-started"
+        },
+        {
+          "id": "contributing-md",
+          "status": "not-started"
+        },
+        {
+          "id": "copilot-instructions-pointer-file",
+          "status": "not-started"
+        },
+        {
+          "id": "integration-guide-example",
+          "status": "not-started"
+        },
+        {
+          "id": "composer-description-and-slevomat",
+          "status": "not-started"
+        },
+        {
+          "id": "text-domain-wording",
+          "status": "not-started"
+        },
+        {
+          "id": "verify",
+          "status": "not-started"
+        },
+        {
+          "id": "review",
+          "status": "not-started",
+          "notes": "Use --budget thorough for this phase."
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": []
     },
@@ -207,13 +390,34 @@
         "phpstan/phpstan is on 1.12.x (^1.10); szepeviktor/phpstan-wordpress already allows ^2.0."
       ],
       "tasks": [
-        { "id": "branch", "status": "not-started" },
-        { "id": "report-unmatched-and-drop-stale-patterns", "status": "not-started" },
-        { "id": "plugin-data-type-alias-and-src-clean", "status": "not-started" },
-        { "id": "upgrade-phpstan-2", "status": "not-started" },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started" },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "not-started"
+        },
+        {
+          "id": "report-unmatched-and-drop-stale-patterns",
+          "status": "not-started"
+        },
+        {
+          "id": "plugin-data-type-alias-and-src-clean",
+          "status": "not-started"
+        },
+        {
+          "id": "upgrade-phpstan-2",
+          "status": "not-started"
+        },
+        {
+          "id": "verify",
+          "status": "not-started"
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": []
     },
@@ -228,15 +432,42 @@
         "The only consumer is silver-assist-security (requires ^1.2 via a vcs repository); its own SettingsHub integration test only checks that the hub resolves."
       ],
       "tasks": [
-        { "id": "branch", "status": "not-started" },
-        { "id": "changelog-1-3-0-and-links", "status": "not-started" },
-        { "id": "package-version-1-3-0", "status": "not-started" },
-        { "id": "tag-and-release-workflow", "status": "not-started" },
-        { "id": "consumer-silver-assist-security-suite", "status": "not-started" },
-        { "id": "close-issue-48", "status": "not-started" },
-        { "id": "verify", "status": "not-started" },
-        { "id": "review", "status": "not-started" },
-        { "id": "pr", "status": "not-started" }
+        {
+          "id": "branch",
+          "status": "not-started"
+        },
+        {
+          "id": "changelog-1-3-0-and-links",
+          "status": "not-started"
+        },
+        {
+          "id": "package-version-1-3-0",
+          "status": "not-started"
+        },
+        {
+          "id": "tag-and-release-workflow",
+          "status": "not-started"
+        },
+        {
+          "id": "consumer-silver-assist-security-suite",
+          "status": "not-started"
+        },
+        {
+          "id": "close-issue-48",
+          "status": "not-started"
+        },
+        {
+          "id": "verify",
+          "status": "not-started"
+        },
+        {
+          "id": "review",
+          "status": "not-started"
+        },
+        {
+          "id": "pr",
+          "status": "not-started"
+        }
       ],
       "log": []
     }
@@ -245,6 +476,10 @@
     {
       "date": "2026-10-14",
       "summary": "Plan seeded from a four-track audit (integration tests against a real WP 7.1.3 install, capability design verified against core, documentation drift, CI and tooling). Lifecycle multi-session: the request asked for phases across sessions and the work lands as one PR per phase."
+    },
+    {
+      "date": "2026-10-14",
+      "summary": "Phase 1 code complete locally; CI changes pending validation on the PR."
     }
   ]
 }
