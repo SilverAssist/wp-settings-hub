@@ -136,7 +136,16 @@ class SettingsHubIntegrationTest extends TestCase {
 	private function nodes( \DOMXPath $xpath, string $query ): array {
 		$result = $xpath->query( $query );
 
-		return false === $result ? array() : array_values( iterator_to_array( $result ) );
+		if ( false === $result ) {
+			return array();
+		}
+
+		return array_values(
+			array_filter(
+				iterator_to_array( $result ),
+				static fn( $node ): bool => $node instanceof \DOMNode
+			)
+		);
 	}
 
 	/**

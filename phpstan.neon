@@ -5,28 +5,23 @@ parameters:
         - tests
     excludePaths:
         - vendor
-        - coverage
-        - .phpunit.cache
-        - tests/TestCase.php
+        - coverage (?)
+        - .phpunit.cache (?)
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     scanDirectories:
         - vendor/php-stubs/wordpress-stubs
-    reportUnmatchedIgnoredErrors: false
+    # The WordPress test library is not installed during analysis, so these stubs stand in for
+    # WP_UnitTestCase, tests_add_filter() and the ABSPATH and WP_PLUGIN_DIR constants.
+    scanFiles:
+        - tests/phpstan/wp-test-suite-stubs.php
+    # Every ignore must match something, so a fixed problem cannot leave a stale pattern behind.
+    reportUnmatchedIgnoredErrors: true
     ignoreErrors:
-        # Defensive programming: checking types even when PHPDoc guarantees them.
-        - '#Right side of && is always true#'
-        # WordPress uses associative arrays with dynamic structures that are properly validated at runtime.
-        - '#does not accept non-empty-array#'
-        - '#of function esc_html expects string#'
-        - '#Cannot cast .* to string#'
-        - '#Parameter .* expects string, .* given#'
-        - '#Parameter .* expects callable#'
-        # WordPress core constants defined at runtime (not available in stubs).
-        - '#Constant (ABSPATH|WP_PLUGIN_DIR) not found#'
-        # WordPress Test Suite functions are only available when tests are run, not during static analysis
-        - '#Function (tests_add_filter|_manually_load_package) (has no return type specified|not found)\.#'
-        - '#Undefined type \\WP_UnitTestCase\.#'
-        - '#Use of unknown class: \\WP_UnitTestCase\.#'
-        - '#Class .* extends unknown class WP_UnitTestCase\.#'
-        - '#Call to an undefined (static )?method .*::(setUp|tearDown|assert.*|factory|setExpectedIncorrectUsage)\(\)\.#'
+        # The e2e fixture requires this repository through WP_PLUGIN_DIR, because the Playground server
+        # mounts the repository at wp-content/plugins/wp-settings-hub. That path does not exist where
+        # the analysis runs.
+        -
+            identifier: requireOnce.fileNotFound
+            path: tests/e2e/fixtures/settings-hub-e2e/settings-hub-e2e.php
+            count: 1

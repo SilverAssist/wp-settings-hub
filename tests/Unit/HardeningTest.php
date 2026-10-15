@@ -59,7 +59,7 @@ final class HardeningTest extends TestCase {
 
 		try {
 			unserialize( $payload ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
-		} catch ( \LogicException $exception ) {
+		} catch ( \LogicException $exception ) { // @phpstan-ignore catch.neverThrown (the hub throws it from __wakeup, which PHPStan does not follow)
 			$thrown = $exception;
 		}
 

@@ -18,6 +18,18 @@ namespace SilverAssist\SettingsHub;
  * and optional cross-plugin navigation tabs. A plugin registers itself with
  * register_plugin() and chooses the capability a user needs to see its page.
  *
+ * @phpstan-type PluginAction array{label: string, url?: string, callback?: callable, class?: string}
+ * @phpstan-type PluginData array{
+ *     name: string,
+ *     slug: string,
+ *     callback: callable,
+ *     capability: string,
+ *     description?: string,
+ *     version?: string,
+ *     tab_title?: string,
+ *     actions?: array<PluginAction>
+ * }
+ *
  * @since 1.0.0
  */
 final class SettingsHub {
@@ -31,16 +43,7 @@ final class SettingsHub {
 	/**
 	 * Registered plugins.
 	 *
-	 * @var array<string, array{
-	 *     name: string,
-	 *     slug: string,
-	 *     callback: callable,
-	 *     capability: string,
-	 *     description?: string,
-	 *     version?: string,
-	 *     tab_title?: string,
-	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
-	 * }>
+	 * @var array<string, PluginData>
 	 */
 	private array $plugins = array();
 
@@ -159,10 +162,10 @@ final class SettingsHub {
 	 * is added only once, so after `admin_menu` has run it keeps the title, label,
 	 * capability and callback of the first registration.
 	 *
-	 * @param string                                                      $slug     Unique plugin slug (e.g., 'post-revalidate').
-	 * @param string                                                      $name     Display name for the plugin.
-	 * @param callable                                                    $callback Function to render the plugin's settings page.
-	 * @param array<string, string|array<array<string, string|callable>>> $args {
+	 * @param string               $slug     Unique plugin slug (e.g., 'post-revalidate').
+	 * @param string               $name     Display name for the plugin.
+	 * @param callable             $callback Function to render the plugin's settings page.
+	 * @param array<string, mixed> $args {
 	 *     Optional arguments for the plugin.
 	 *
 	 *     @type string   $capability   Capability a user needs to see and open the plugin's page (since 1.3.0).
@@ -204,6 +207,11 @@ final class SettingsHub {
 		// Set after the merge so the stored value is always present and normalised.
 		$plugin['capability'] = $this->normalize_capability( $args['capability'] ?? null, $slug );
 
+		/**
+		 * The optional keys come straight from the caller, so the stored shape is the documented contract.
+		 *
+		 * @var PluginData $plugin
+		 */
 		$this->plugins[ $slug ] = $plugin;
 
 		// Hook into admin_menu to register menus (WordPress ignores the repeat of an identical callback).
@@ -481,11 +489,13 @@ final class SettingsHub {
 	 *
 	 * @param array<string, mixed> $plugin Stored plugin data.
 	 *
+	 * @phpstan-param PluginData $plugin
+	 *
 	 * @return string Capability name.
 	 */
 	private function get_plugin_capability( array $plugin ): string {
-		$slug       = (string) ( $plugin['slug'] ?? '' );
-		$capability = $this->normalize_capability( $plugin['capability'] ?? null, $slug );
+		$slug       = $plugin['slug'];
+		$capability = $this->normalize_capability( $plugin['capability'], $slug );
 
 		/**
 		 * Filters the capability required to see and open a plugin's Settings Hub page.
@@ -496,9 +506,9 @@ final class SettingsHub {
 		 *
 		 * @since 1.3.0
 		 *
-		 * @param string               $capability Resolved capability.
-		 * @param string               $slug       Plugin slug.
-		 * @param array<string, mixed> $plugin     Stored plugin data.
+		 * @param string     $capability Resolved capability.
+		 * @param string     $slug       Plugin slug.
+		 * @param PluginData $plugin     Stored plugin data.
 		 */
 		return $this->normalize_capability(
 			apply_filters( 'silverassist_settings_hub_plugin_capability', $capability, $slug, $plugin ),
@@ -538,16 +548,7 @@ final class SettingsHub {
 	 *
 	 * @since 1.3.0
 	 *
-	 * @return array<string, array{
-	 *     name: string,
-	 *     slug: string,
-	 *     callback: callable,
-	 *     capability: string,
-	 *     description?: string,
-	 *     version?: string,
-	 *     tab_title?: string,
-	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
-	 * }> Visible plugins, keyed by slug.
+	 * @return array<string, PluginData> Visible plugins, keyed by slug.
 	 */
 	private function get_visible_plugins(): array {
 		return array_filter(
@@ -616,18 +617,9 @@ final class SettingsHub {
 	/**
 	 * Render a plugin card on the dashboard.
 	 *
-	 * @param array<string, string|callable|array<array<string, string|callable>>> $plugin {
-	 *     Plugin data array.
+	 * @param array<string, mixed> $plugin Stored plugin data.
 	 *
-	 *     @type string   $name        Plugin name.
-	 *     @type string   $slug        Plugin slug.
-	 *     @type callable $callback    Settings page callback.
-	 *     @type string   $capability  Capability required to open the plugin's page.
-	 *     @type string   $description Optional. Plugin description.
-	 *     @type string   $version     Optional. Plugin version.
-	 *     @type string   $tab_title   Optional. Tab title.
-	 *     @type array[]  $actions     Optional. Action buttons.
-	 * }
+	 * @phpstan-param PluginData $plugin
 	 */
 	private function render_plugin_card( array $plugin ): void {
 		$slug         = (string) $plugin['slug'];
@@ -663,9 +655,10 @@ final class SettingsHub {
 					</a>
 
 					<?php
-					// Render additional actions from plugins.
-					if ( isset( $plugin['actions'] ) && is_array( $plugin['actions'] ) && count( $plugin['actions'] ) > 0 ) {
-						foreach ( $plugin['actions'] as $action ) {
+					// Render additional actions from plugins. The value comes from the caller, so it is checked again here.
+					$actions = $plugin['actions'] ?? null;
+					if ( is_array( $actions ) ) {
+						foreach ( $actions as $action ) {
 							$this->render_action_button( $action, $plugin['slug'] );
 						}
 					}
@@ -691,8 +684,10 @@ final class SettingsHub {
 	/**
 	 * Render an action button.
 	 *
-	 * @param array{label: string, url?: string, callback?: callable, class?: string} $action       Action data.
-	 * @param string                                                                  $plugin_slug Plugin slug for callback context.
+	 * @param array<string, mixed> $action      Action data.
+	 * @param string               $plugin_slug Plugin slug for callback context.
+	 *
+	 * @phpstan-param PluginAction $action
 	 */
 	private function render_action_button( array $action, string $plugin_slug ): void {
 		if ( empty( $action['label'] ) ) {
@@ -714,7 +709,8 @@ final class SettingsHub {
 		// If a callback is provided, render a button. The callback runs now, while the page renders,
 		// and whatever JavaScript it prints becomes the body of the button's click handler,
 		// where `event` is the click event.
-		if ( isset( $action['callback'] ) && is_callable( $action['callback'] ) ) {
+		$callback = $action['callback'] ?? null;
+		if ( is_callable( $callback ) ) {
 			$button_id = $this->unique_button_id( 'sa-action-' . sanitize_key( $plugin_slug . '-' . $action['label'] ) );
 			?>
 			<button 
@@ -727,7 +723,7 @@ final class SettingsHub {
 			</button>
 			<script type="text/javascript">
 				document.getElementById('<?php echo esc_js( $button_id ); ?>').addEventListener('click', function(event) {
-					<?php call_user_func( $action['callback'], $plugin_slug ); ?>
+					<?php call_user_func( $callback, $plugin_slug ); ?>
 				});
 			</script>
 			<?php
@@ -754,18 +750,9 @@ final class SettingsHub {
 	/**
 	 * Render a plugin's settings page with optional tabs navigation.
 	 *
-	 * @param array<string, string|callable|array<array<string, string|callable>>> $plugin {
-	 *     Plugin data array.
+	 * @param array<string, mixed> $plugin Stored plugin data.
 	 *
-	 *     @type string   $name        Plugin name.
-	 *     @type string   $slug        Plugin slug.
-	 *     @type callable $callback    Settings page callback.
-	 *     @type string   $capability  Capability required to open the plugin's page.
-	 *     @type string   $description Optional. Plugin description.
-	 *     @type string   $version     Optional. Plugin version.
-	 *     @type string   $tab_title   Optional. Tab title.
-	 *     @type array[]  $actions     Optional. Action buttons.
-	 * }
+	 * @phpstan-param PluginData $plugin
 	 */
 	private function render_plugin_page( array $plugin ): void {
 		// WordPress already gates the page through its submenu capability; this covers direct calls.
@@ -837,16 +824,7 @@ final class SettingsHub {
 	/**
 	 * Get all registered plugins.
 	 *
-	 * @return array<string, array{
-	 *     name: string,
-	 *     slug: string,
-	 *     callback: callable,
-	 *     capability: string,
-	 *     description?: string,
-	 *     version?: string,
-	 *     tab_title?: string,
-	 *     actions?: array<array{label: string, url?: string, callback?: callable, class?: string}>
-	 * }> Registered plugins.
+	 * @return array<string, PluginData> Registered plugins, keyed by slug.
 	 */
 	public function get_plugins(): array {
 		return $this->plugins;

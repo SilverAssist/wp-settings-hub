@@ -79,7 +79,9 @@ class CapabilityIntegrationTest extends TestCase {
 
 		$labels = array();
 		foreach ( ( new \DOMXPath( $dom ) )->query( '//nav//a' ) ?: array() as $link ) {
-			$labels[] = trim( $link->textContent );
+			if ( $link instanceof \DOMNode ) {
+				$labels[] = trim( $link->textContent );
+			}
 		}
 
 		return $labels;
