@@ -559,6 +559,10 @@
         {
           "date": "2026-10-15",
           "summary": "Executed by three Sonnet agents in isolated worktrees (docs, meta, phpstan) with two independent review lenses per track and up to three revise rounds. Docs track: 4 + 2 fix commits after two rounds with actionable findings (false claim that a second registration of a slug replaces the submenu, wrong claim that priority 4 is the only one working before 1.3.0, slug URL characters, return value of add_menu_page). Meta track: no actionable findings. slevomat/coding-standard was removed only as a direct dev dependency: it stays installed because silverassist/wp-coding-standards requires it, and the phpcs result is unchanged. The orchestrator merged the tracks into 48-phase-5-docs, softened the claim about admin_menu priority 5 itself (depends on callback order) and made the JS names in IMPLEMENTATION.md consistent. Not done on purpose: packagist-yml-and-contributing-details (install story pending), consolidating the update button material into one example (only the names were unified), and stating the registration window only in IMPLEMENTATION.md (the README and integration guide repeat it briefly). Verified on the branch: 110 tests, phpcs and phpstan green, composer validate --strict ok, php -l on integration-guide.php."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Merged as PR #62 (squash 5e42121) with admin override. Item stays in-progress only because packagist-yml-and-contributing-details is blocked on the install story decision."
         }
       ]
     },
@@ -566,7 +570,7 @@
       "id": "phase-6-phpstan",
       "title": "Phase 6: PHPStan tightening",
       "kind": "phase",
-      "status": "in-progress",
+      "status": "completed",
       "notes": "Branch: 48-phase-6-phpstan. Keep src/ fully clean; a tests/-only baseline is acceptable for the 2.x upgrade if logged as a follow-up.",
       "findings": [
         "With reportUnmatchedIgnoredErrors: true, three ignore patterns are stale (Undefined type \\WP_UnitTestCase, Use of unknown class \\WP_UnitTestCase, Class .* extends unknown class WP_UnitTestCase).",
@@ -613,6 +617,10 @@
         {
           "date": "2026-10-15",
           "summary": "Executed by a Sonnet agent in an isolated worktree, reviewed by two independent lenses (ignore audit and source safety, toolchain and gate) for two rounds; the fixer restored a (string) cast in get_plugin_capability that the first pass dropped. PHPStan 2.3.1 at level 8 with reportUnmatchedIgnoredErrors on; the WordPress test library and constants are stubbed in tests/phpstan/wp-test-suite-stubs.php; one path-scoped ignore remains (the e2e fixture). The 7 assertNotFalse assertions that PHPStan proved always true were removed (374 assertions, same 110 tests). The agent put 98.31% in codecov.yml but no log or API shows it; the orchestrator replaced it with the verifiable PHPUnit line coverage of the CI run on main after Phase 4 (98.26%, 282/287) and set the project target to 96.26% (minus 2 points), validated with the Codecov validator. Stacked on 48-phase-5-docs: the composer.lock conflict was resolved by keeping the PHPStan lock and refreshing the content hash with composer update --lock (slevomat stays as a transitive dependency)."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Merged as PR #63 (squash 389c5f8) with admin override after all checks passed; the review requirement was the only blocker."
         }
       ]
     },
@@ -620,7 +628,7 @@
       "id": "phase-7-release",
       "title": "Phase 7: Release 1.3.0 and consumer verification",
       "kind": "phase",
-      "status": "not-started",
+      "status": "in-progress",
       "notes": "Branch: 48-phase-7-release-1-3-0. Tags are immutable; never move or delete an existing tag. Order matters: the consumer verification runs before the tag.",
       "findings": [
         "CHANGELOG.md lacks a [1.2.2] compare link and [Unreleased] still compares from v1.2.1.",
@@ -629,39 +637,42 @@
       "tasks": [
         {
           "id": "branch",
-          "status": "not-started"
+          "status": "completed",
+          "notes": "Branch 48-phase-7-release created from main at 03386b5 (after the release tooling PR #60, squash 03386b5)."
         },
         {
           "id": "changelog-1-3-0-and-links",
-          "status": "not-started",
-          "notes": "Run scripts/update-version.sh 1.3.0 (it moves [Unreleased], adds the [1.3.0] link and sets PACKAGE_VERSION in one step). The missing [1.2.2] link and the [Unreleased] base were repaired in the release-tooling branch."
+          "status": "completed",
+          "notes": "Prepared with scripts/update-version.sh 1.3.0 --date 2026-10-15: [Unreleased] became [1.3.0], links added. The date is the preparation date, change the heading date if the tag is pushed on another day. Reworded the PACKAGE_VERSION entry so it stays true after the bump."
         },
         {
           "id": "package-version-1-3-0",
-          "status": "not-started",
-          "notes": "Done by scripts/update-version.sh together with the CHANGELOG move; scripts/check-versions.sh --expect 1.3.0 verifies it."
+          "status": "completed",
+          "notes": "PACKAGE_VERSION is 1.3.0 in the same commit; scripts/check-versions.sh --expect 1.3.0 passes."
         },
         {
           "id": "consumer-silver-assist-security-suite",
-          "status": "not-started",
-          "notes": "Before tagging: in silver-assist-security require the merged commit as dev-main as 1.3.0 (or a path repository) and run its full suite (unit, integration, e2e if available). Tags are immutable, so this is the safety net."
+          "status": "completed",
+          "notes": "Done on a copy of silver-assist-security (the working repo was not touched), hub swapped to 1.3.0 through a composer path repository with a forced 1.3.0 version, own WordPress test library and database. Full PHPUnit suite with WPGraphQL and Contact Form 7 installed so the admin page tests run: 889 tests, 3920 assertions, 0 failures, 5 skipped (multisite, CF7 stub), identical to the same run with the hub 1.2.x it currently locks. No _doing_it_wrong notice from the late registration check. Without WPGraphQL the same run skips 126 tests and shows one unrelated pre-existing failure (GraphQLSecurityIntegrationTest::test_adaptive_limits_headless_mode), also identical on both hub versions. Not run: the consumer Playwright e2e and its multisite job."
         },
         {
           "id": "tag-and-release-workflow",
-          "status": "not-started"
+          "status": "not-started",
+          "notes": "Waiting for the owner: merge the release PR, then git tag -a v1.3.0 and push it; release.yml validates with scripts/check-versions.sh --expect 1.3.0. Tags are immutable."
         },
         {
           "id": "consumer-confirm-tagged-release",
           "status": "not-started",
-          "notes": "After the release: composer update silverassist/wp-settings-hub in the consumer and confirm the lock resolves 1.3.0."
+          "notes": "After the release: composer update silverassist/wp-settings-hub in silver-assist-security and confirm the lock resolves 1.3.0."
         },
         {
           "id": "close-issue-48",
-          "status": "not-started"
+          "status": "not-started",
+          "notes": "Close #48 after the release; also decide the install story (.packagist.yml) first or record it as a follow-up issue."
         },
         {
           "id": "verify",
-          "status": "not-started"
+          "status": "completed"
         },
         {
           "id": "review",
@@ -676,6 +687,10 @@
         {
           "date": "2026-10-15",
           "summary": "Release preparation tooling added ahead of the release (not released): scripts/update-version.sh X.Y.Z [--date] [--dry-run] and scripts/check-versions.sh [--expect X.Y.Z]. release.yml now calls check-versions.sh instead of its inline checks, and CONTRIBUTING.md documents the flow. Tested on a copy of the phase 4 branch: dry run, a real 1.2.2 -> 1.3.0 move (heading, both links, PACKAGE_VERSION, check passes), refusal of an equal, older or malformed version, refusal of an empty [Unreleased] on a second run. shellcheck is clean."
+        },
+        {
+          "date": "2026-10-15",
+          "summary": "Release prepared, not released, as the owner asked. Branch 48-phase-7-release holds the CHANGELOG move, the 1.3.0 version and this plan state. Local checks on the branch: 110 tests, phpcs, phpstan, check-versions.sh --expect 1.3.0 green."
         }
       ]
     }
