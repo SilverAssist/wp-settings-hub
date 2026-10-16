@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-15
+
 ### Added
 
 - Design system documented in `docs/design-system.md`: tokens, component rules, contrast ratios, accessibility rules and a guide for consumer plugins ([#49](https://github.com/SilverAssist/wp-settings-hub/issues/49)).
@@ -25,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The menu registration is idempotent: firing `admin_menu` again no longer duplicates the submenu rows.
 - A callback action's JavaScript now runs in a click handler that receives `event` (`function(event) {...}`), and the button ids are unique within a dashboard page (a repeated id gets a numeric suffix, for example labels "Run Now" and "RunNow").
 - Unserializing the hub now throws a `LogicException` instead of silently producing a second instance.
-- `PACKAGE_VERSION` (the stylesheet `ver` for cache busting) is `1.2.2`; it was left at `1.2.0`, so browsers kept the stylesheet cached through the 1.2.1 and 1.2.2 releases. A test now fails when it drifts from the newest released CHANGELOG heading.
+- `PACKAGE_VERSION`, the stylesheet `ver` used for cache busting, was left at `1.2.0` through the 1.2.1 and 1.2.2 releases, so browsers kept serving the old stylesheet. It now follows the release version, and a test fails when it drifts from the newest released CHANGELOG heading.
 - Redesigned the dashboard, tabs and page header with a border-first monochrome style: bordered cards with an icon tile and no lift on hover, pill tabs with a soft-blue active state, a brand-teal (`#2d8ab3`) focus ring, one brand-navy (`#003073`) primary action per card and a neutral monospace version pill.
 - Plugin cards render as `<article>` elements labelled by their title. CSS classes are unchanged.
 - The pre-1.3 CSS custom properties (`--silver-hub-color-*`, `--silver-hub-spacing-*`, `--silver-hub-font-size-*` and friends) are now aliases of the new tokens. `--silver-hub-color-primary` is now the brand navy `#003073` instead of `#0073aa`.
@@ -307,7 +309,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PHPStan Level 8 analysis
 - Automated quality checks in CI/CD
 
-[Unreleased]: https://github.com/SilverAssist/wp-settings-hub/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/SilverAssist/wp-settings-hub/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/SilverAssist/wp-settings-hub/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/SilverAssist/wp-settings-hub/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/SilverAssist/wp-settings-hub/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/SilverAssist/wp-settings-hub/compare/v1.1.5...v1.2.0

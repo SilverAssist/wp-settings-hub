@@ -122,7 +122,7 @@ final class SettingsHub {
 	 *
 	 * @var string
 	 */
-	private const PACKAGE_VERSION = '1.2.2';
+	private const PACKAGE_VERSION = '1.3.0';
 
 	/**
 	 * Private constructor to enforce singleton pattern.
